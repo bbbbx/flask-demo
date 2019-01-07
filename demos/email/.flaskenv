@@ -1,0 +1,2 @@
+FLASK_ENV=development
+SECRET_KEY=3a2e063ebda4b0e6449612b8a2704a64

@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+{% import 'bootstrap/wtf.html' as wtf %}
+{% from 'bootstrap/pagination.html' import render_pagination %}
+
+{% block title %}Flask demo{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>Hello, {% if name %}{{name}}{% else %}Stranger{% endif %}！</h1>
+        
+        {% if not known %}
+            <p  class="alert alert-success">很高兴见到你！</p>
+        {% else %}
+            <p  class="alert alert-info">很高兴再次见到你！</p>
+        {% endif %}
+    </div>
+    {{ wtf.quick_form(form) }}
+
+    <table class="table table-striped">
+        <thead>
+            <tr>
+                <th scope>#</th>
+                <th>ID</th>
+                <th>username</th>
+                <th>role_id</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for user in users %}
+                <tr>
+                    <th scope="row">{{ loop.index }}</th>
+                    <td>{{ user.id }}</td>
+                    <td>{{ user.username }}</td>
+                    <td>{{ user.role_id }}</td>
+                </li>
+            {% endfor %}
+        </tbody>
+        
+    </table>
+{% endblock %}

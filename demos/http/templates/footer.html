@@ -1,0 +1,5 @@
+<footer class="container">
+    <p>© Venus </p>
+    <p>本地日期和时间是：{{ moment(current_time).format('LLL', refresh=True) }}。</p>
+    <p>上面的时间是{{ moment(current_time).fromNow(refresh=True) }}。</p>
+</footer>
