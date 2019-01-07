@@ -1,5 +1,3 @@
-from threading import Thread
-from flask import render_template
 from celery import Celery
 
 BROKER_URL = 'amqp://'
