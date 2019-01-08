@@ -9,4 +9,6 @@
         <h1>Hello, {% if name %}{{ name }}{% else %}Stanger{% endif %}!</h1>
     </div>
     {{ wtf.quick_form(form, action="/") }}
+
+    {{ database|safe }}
 {% endblock %}

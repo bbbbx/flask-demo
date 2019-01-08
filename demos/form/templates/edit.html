@@ -1,0 +1,27 @@
+{% extends 'base.html' %}
+
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block title %}flask-ckeditor demo{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>Hello</h1>
+    </div>
+
+    <form method="post">
+        <div class="form-group">
+            {{ form.title.label(class="control-label", for="title") }}
+            {{form.title(class="form-control", type="text") }}
+        </div>
+        <div class="form-group">
+            {{ form.body.label(class="control-label", for="body") }}
+            {{form.body(class="form-control") }}
+        </div>
+        {{ form.submit(class="btn btn-success") }}
+    </form>
+
+    {{ ckeditor.load(pkg_type="full") }}
+    {{ ckeditor.load_code_theme() }}
+    {{ ckeditor.config(name='body') }}
+{% endblock %}

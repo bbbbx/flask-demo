@@ -16,6 +16,7 @@ flask-migrate = "*"
 flask-mail = "*"
 celery = "*"
 redis = "*"
+flask-ckeditor = "*"
 
 [requires]
 python_version = "3.7"
