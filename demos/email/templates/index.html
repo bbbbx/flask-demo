@@ -2,15 +2,85 @@
 
 {% import 'bootstrap/wtf.html' as wtf %}
 
-{% block title %}flask-wtf demo{% endblock %}
+{% block title %}celery demo{% endblock %}
+
+{% block head %}
+    {{ super() }}
+    <style>
+        .progress {
+            width: 100%;
+            height: 100%;
+            text-align: center;
+        }
+    </style>
+{% endblock %}
 
 {% block page_content %}
     <div class="page-header">
-        <h1>Hello, {% if name %}{{ name }}{% else %}Stanger{% endif %}!</h1>
+        <h1>Long running task with progress updates demo</h1>
     </div>
-    <!-- {{ wtf.quick_form(form, action="/") }} -->
-    <form method="POST">
+    <!-- <form method="POST">
         <p>Send test email to: <input type="text" name="email" required value="{{ email }}"></p>
         <input type="submit" name="submit" value="Send">
-    </form>
+    </form> -->
+    <!-- {{ wtf.quick_form(form, action="/") }} -->
+
+    <button class="btn btn-success" id="start-bg-job">Start Long Calculation</button><br><br>
+    <div id="progress"></div>
+
+    <script src="//cdnjs.cloudflare.com/ajax/libs/nanobar/0.2.1/nanobar.min.js"></script>
+    <script src="//cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"></script>
+    <script>
+        function start_long_task() {
+            // add task status elements
+            div = $('<div class="progress"><div></div><div>0%</div><div>...</div><div>&nbsp;</div></div><hr>');
+            $('#progress').append(div);
+            // create a progress bar
+            var nanobar = new Nanobar({
+                bg: '#44f',
+                target: div[0].childNodes[0]
+            });
+            // send ajax POST request to start background job
+            $.ajax({
+                type: 'POST',
+                url: '/longtask',
+                success: function(data, status, request) {
+                    status_url = request.getResponseHeader('Location');
+                    update_progress(status_url, nanobar, div[0]);
+                },
+                error: function() {
+                    alert('Unexpected error');
+                }
+            });
+        }
+        function update_progress(status_url, nanobar, status_div) {
+            // send GET request to status URL
+            $.getJSON(status_url, function(data) {
+                console.log(data)
+                // 更新 UI
+                percent = parseInt(data['current'] / data['total'] * 100);
+                nanobar.go(percent);
+                $(status_div.childNodes[1]).text(percent + '%');
+                $(status_div.childNodes[2]).text(data['status']);
+                if (data['state'] != 'PENDING' && data['state'] != 'PROGRESS') {
+                    if ('result' in data) {
+                        // 显示 result
+                        $(status_div.childNodes[3]).text('Result: ' + data['result']);
+                    }
+                    else {
+                        // 发生意外
+                        $(status_div.childNodes[3]).text('Result: ' + data['state']);
+                    }
+                } else {
+                    // 2 秒后调用
+                    setTimeout(function() {
+                        update_progress(status_url, nanobar, status_div);
+                    }, 2000);
+                }
+            });
+        }
+        $(function() {
+            $('#start-bg-job').click(start_long_task);
+        });
+    </script>
 {% endblock %}

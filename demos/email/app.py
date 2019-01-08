@@ -6,8 +6,10 @@
 的操作发给 Celery 任务队列。
 '''
 import os
+import random
+import time
 from threading import Thread
-from flask import Flask, render_template, redirect, url_for, session, flash, request
+from flask import Flask, render_template, redirect, url_for, session, flash, request, jsonify
 from flask_mail import Mail, Message
 from flask_wtf import FlaskForm
 from wtforms import StringField, SubmitField
@@ -81,3 +83,74 @@ def index():
     #         flash('发送邮件失败！')
     #     return redirect(url_for('index'))
     # return render_template('index.html', form=form, name=session.get('name'))
+
+@celery.task(bind=True)
+def long_task(self):
+    '''
+    添加 bind=True 参数到 Celery 修饰器中，
+    可以让 Celery 发送 self 参数到自定义的函数中，
+    之后可以用这个参数来记录 state 的更新。
+    '''
+    # verb = ['启动', '加速', '修复', '加载', '检查']
+    # adjective = ['精通的', '金闪闪的', '安静的', '和善的', '迅速的']
+    # noun = ['太阳军团', '再生者', '宇宙射线', '轨道飞行器', '位']
+    poetries = [
+        '黑发不知勤学早，白首方悔读书迟。',
+        '最是繁丝摇落后，转教人忆春山。',
+        '天生我材必有用，千金散尽还复来。',
+        '大鹏一日同风起，扶摇直上九万里。',
+        '百战沙场碎铁衣，城南已合数重围。',
+        '器乏雕梁器，材非构厦材。',
+        '百岁落半途，前期浩漫漫。',
+        '沉舟侧畔千帆过，病树前头万木春。'
+    ]
+    message = ''  # 发送一些滑稽的 message 给 client
+    total = random.randint(10, 50)
+    for i in range(total):
+        if not message or random.random() < 0.25:
+            # message = '{0}{1}{2}...'.format(random.choice(verb),
+            #                                   random.choice(adjective),
+            #                                   random.choice(noun))
+            message = '{0}'.format(random.choice(poetries))
+
+        # Celery 运行跟踪 task 当前的 state，
+        # 有几个内置的 state，也可以自定义 state。
+        # http://docs.celeryproject.org/en/latest/userguide/tasks.html#states
+        self.update_state(state='PROGRESS', meta={'current': i, 'total': total, 'status': message})
+        time.sleep(1)
+    return {'current': 100, 'total': 100, 'status': 'Task completed!', 'result': 42}
+
+@app.route('/longtask', methods=['POST'])
+def longtask():
+    task = long_task.apply_async()
+    return jsonify({}), 202, {'Location': url_for('taskstatus', task_id=task.id)}
+
+@app.route('/status/<task_id>')
+def taskstatus(task_id):
+    task = long_task.AsyncResult(task_id)
+    if task.state == 'PENDING':
+        # job did not start yet
+        response = {
+            'state': task.state,
+            'current': 0,
+            'total': 1,
+            'status': 'Pending...'
+        }
+    elif task.state != 'FAILURE':
+        response = {
+            'state': task.state,
+            'current': task.info.get('current', 0),
+            'total': task.info.get('total', 1),
+            'status': task.info.get('status', '')
+        }
+        if 'result' in task.info:
+            response['result'] = task.info['result']
+    else:
+        # something went wrong in the background job
+        response = {
+            'state': task.state,
+            'current': 1,
+            'total': 1,
+            'status': str(task.info)  # this is the exception raised
+        }
+    return jsonify(response)

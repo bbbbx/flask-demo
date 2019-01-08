@@ -1,0 +1,16 @@
+{% extends 'base.html' %}
+
+{% import 'bootstrap/wtf.html' as wtf %}
+
+{% block title %}flask-wtf demo{% endblock %}
+
+{% block page_content %}
+    <div class="page-header">
+        <h1>Hello, {% if name %}{{ name }}{% else %}Stanger{% endif %}!</h1>
+    </div>
+    <!-- {{ wtf.quick_form(form, action="/") }} -->
+    <form method="POST">
+        <p>Send test email to: <input type="text" name="email" required value="{{ email }}"></p>
+        <input type="submit" name="submit" value="Send">
+    </form>
+{% endblock %}
