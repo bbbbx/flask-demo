@@ -1,0 +1,23 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <form action="" method="POST" class="form-group">
+        {{ form.csrf_token }}
+        {{ form.name.label(class="font-weight-bold") }}: 
+        {{ form.name(class="form-control") }}
+        {{ form.body.label(class="font-weight-bold") }}: 
+        {{ form.body(class="form-control form-text") }}<br />
+        {{ form.submit(class="btn btn-success") }}
+    </form>
+    <hr>
+    <ul>
+        {% for message in messages %}
+            <li>
+                <p><strong>{{ message.name }}</strong>:</p>
+                <p>{{ message.body }}</p>
+                <p class="text-right"><small class="color-secondary">{{ message.timestamp|string|indent(first=True) }}</small></p>
+                <hr />
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

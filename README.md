@@ -13,3 +13,11 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - HTML 模板引擎：Jinja2
 - 环境变量：python-dotenv
 - Python 环境：pipenv
+- 在 Python 中嵌入 C：ctypes
+- 生成测试假数据：[joke2k/faker](https://github.com/joke2k/faker)
+
+## 原型设计工具
+
+- [Axure RP](https://www.axure.com/)
+- [Mockplus](https://www.mockplus.cn/)
+- [Sketch](https://www.sketchapp.com/)

@@ -1,0 +1,26 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Say Hello</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
+</head>
+<body>
+    <div class="container">
+        <h1>Say Hello to the World.</h1>
+
+        {% for category, message in get_flashed_messages(with_categories=True) %}
+            {% if category == 'error' %}
+                <p class="alert alert-danger">{{ message }}</p>
+            {% else %}
+                <p class="alert alert-success">{{ message }}</p>
+            {% endif %}
+        {% endfor %}
+
+        {% block content %}
+        {% endblock %}
+    </div>
+</body>
+</html>
