@@ -31,3 +31,7 @@ def divide(x, y):
     rem = ctypes.c_int()
     quot = _divide(x, y, rem)
     return quot, rem.value
+
+calc_pi = _mod.calc_pi
+calc_pi.argtypes = [ctypes.c_int]
+calc_pi.restype = ctypes.c_double
