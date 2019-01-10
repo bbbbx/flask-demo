@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block content %}
+    <div id="container" class="container">
+        <meta charset="utf-8">
+        <title>SheetJS Table Export</title>
+        <table id="data-table" border="1">
+            <tbody>
+                <tr>
+                    <td t="s" id="sjs-A1"><span contenteditable="true">This我</span></td>
+                    <td t="s" id="sjs-B1"><span contenteditable="true">is</span></td>
+                    <td t="s" id="sjs-C1"><span contenteditable="true">a</span></td>
+                    <td t="s" id="sjs-D1"><span contenteditable="true">Test</span></td>
+                </tr>
+                <tr>
+                    <td t="s" id="sjs-A2"><span contenteditable="true">வணக்கம்</span></td>
+                    <td t="s" id="sjs-B2"><span contenteditable="true">สวัสดี</span></td>
+                    <td t="s" id="sjs-C2"><span contenteditable="true">你好</span></td>
+                    <td t="s" id="sjs-D2"><span contenteditable="true">가지마</span></td>
+                </tr>
+                <tr>
+                    <td t="n" id="sjs-A3"><span contenteditable="true">1</span></td>
+                    <td t="n" id="sjs-B3"><span contenteditable="true">2</span></td>
+                    <td t="n" id="sjs-C3"><span contenteditable="true">3</span></td>
+                    <td t="n" id="sjs-D3"><span contenteditable="true">4</span></td>
+                </tr>
+                <tr>
+                    <td t="s" id="sjs-A4"><span contenteditable="true">Click</span></td>
+                    <td t="s" id="sjs-B4"><span contenteditable="true">to</span></td>
+                    <td t="s" id="sjs-C4"><span contenteditable="true">edit</span></td>
+                    <td t="s" id="sjs-D4"><span contenteditable="true">cells</span></td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <button class="btn btn-success" onclick="doit('xlsx')">导出</button>
+    <input type="file" onchange="importToDOM(this, '#demo')" accept=".xls, .xlsx">
+    <div class="container" id="demo"></div>
+
+    <script>
+        function doit(type, fn, dl) {
+            var elt = document.getElementById('data-table');
+            var wb = XLSX.utils.table_to_book(elt, {sheet:"Sheet JS"});
+            return dl ?
+                XLSX.write(wb, {bookType:type, bookSST:true, type: 'base64'}) :
+                XLSX.writeFile(wb, fn || ('test.' + (type || 'xlsx')));
+        }
+
+        function importToDOM(inputDOM, outputDOM) {
+            if (!inputDOM.files) {
+                return ;
+            }
+            var f = inputDOM.files[0];
+            var reader = new FileReader()
+            var workbook;
+            var result = '';
+
+            reader.onload = function(e) {
+                var data = e.target.result;
+                workbook = XLSX.read(data, { type: 'binary' });
+                var sheetNames = workbook.SheetNames;
+                sheetNames.forEach(function(sheetName) {
+                    var worksheet = workbook.Sheets[sheetName];
+                    result += JSON.stringify(XLSX.utils.sheet_to_json(worksheet));
+                    document.querySelector(outputDOM).innerHTML += renderTable(result);
+                });
+            };
+            reader.readAsBinaryString(f);
+        }
+
+        function renderTable(str) {
+            var html = '<table id="data-table" border="1"><tbody><tr>';
+            var json = JSON.parse(str);
+            for (key of Object.keys(json[0])) {
+                html += '<td>' + key + '</td>';
+            }
+            html += '</tr>';
+            for (row of json) {   
+                html += '<tr>';
+                for (field of Object.keys(row)) {
+                    html += '<td>' + row[field] + '</td>';
+                }
+                html += '</tr>';
+            }
+            html += '</tbody></table>';
+            return html;
+        }
+    </script>
+{% endblock %}

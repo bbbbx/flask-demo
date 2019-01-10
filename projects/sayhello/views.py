@@ -20,3 +20,7 @@ def index():
         return redirect(url_for('index'))
     messages = Message.query.order_by(Message.timestamp.desc()).limit(100).all()
     return render_template('index.html', messages=messages, form=form)
+
+@app.route('/xlsxdemo')
+def xlsxdemo():
+    return render_template('xlsxdemo.html')
