@@ -17,6 +17,7 @@ flask-mail = "*"
 celery = "*"
 redis = "*"
 flask-ckeditor = "*"
+faker = "*"
 
 [requires]
 python_version = "3.7"

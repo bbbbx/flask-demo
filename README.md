@@ -15,6 +15,8 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - Python 环境：pipenv
 - 在 Python 中嵌入 C：ctypes
 - 生成测试假数据：[joke2k/faker](https://github.com/joke2k/faker)
+- Web 服务器：uWSGI
+- 代理服务器：Nginx
 
 ## 原型设计工具
 

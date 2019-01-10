@@ -4,12 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>Say Hello</title>
+    <title>{% block title %}Say Hello{% endblock %}</title>
     <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.min.css') }}">
 </head>
 <body>
-    <div class="container">
-        <h1>Say Hello to the World.</h1>
+    <main class="container">
+        <header>
+            <h1 class="text-center display-4">
+                <a href="{{ url_for('index') }}" class="text-success"><strong>Say Hello</strong></a>
+                <small class="text-muted sub-title">to the world</small>
+            </h1>
+        </header>
 
         {% for category, message in get_flashed_messages(with_categories=True) %}
             {% if category == 'error' %}
@@ -21,6 +26,23 @@
 
         {% block content %}
         {% endblock %}
-    </div>
+
+        <footer class="text-center">
+            {% block footer %}
+                <small> &copy; 2019 <a href="http://venusworld.cn.com" title="Written by Grey Li">Grey Li</a> /
+                    <a href="https://github.com/greyli/sayhello" title="Fork me on GitHub">GitHub</a> /
+                    <a href="http://helloflask.com" title="A HelloFlask project">HelloFlask</a>
+                </small>
+                <p><a id="bottom" href="#" title="回到顶部">&uarr;</a></p>
+            {% endblock %}
+        </footer>
+    </main>
+
+    <script src="{{ url_for('static', filename='jquery-3.2.1.slim.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='popper.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {{ moment.include_moment(local_js=url_for('static', filename='moment-with-locales.min.js')) }}
+    {{ moment.locale('zh-CN') }}
 </body>
 </html>

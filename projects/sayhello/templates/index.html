@@ -1,7 +1,7 @@
 {% extends 'base.html' %}
 
 {% block content %}
-    <form action="" method="POST" class="form-group">
+    <form action="{{ request.full_path }}" method="POST" class="form-group">
         {{ form.csrf_token }}
         {{ form.name.label(class="font-weight-bold") }}: 
         {{ form.name(class="form-control") }}
@@ -9,15 +9,26 @@
         {{ form.body(class="form-control form-text") }}<br />
         {{ form.submit(class="btn btn-success") }}
     </form>
-    <hr>
-    <ul>
+    <h5>
+        {{ messages|length }} messages
+        <small class="float-right">
+            <a href="#bottom">去到底部</a>
+        </small>
+    </h5>
+    <div class="list-group">
         {% for message in messages %}
-            <li>
-                <p><strong>{{ message.name }}</strong>:</p>
-                <p>{{ message.body }}</p>
-                <p class="text-right"><small class="color-secondary">{{ message.timestamp|string|indent(first=True) }}</small></p>
-                <hr />
-            </li>
+            <a class="list-group-item list-group-item-action flex-column">
+                <div class="d-flex w-100 justify-content-between">
+                        <h5 class="mb-1 text-success">{{ message.name }}
+                            <small class="text-muted"> #{{ loop.revindex }}</small>
+                        </h5>
+                        <small data-toggle="tooltip" data-placement="top"
+                            data-timestamp="{{ message.timestamp.strftime('%Y-%m-%dT%H:%M:%SZ') }}" >
+                            {{ moment(message.timestamp).fromNow(refresh=True) }}
+                        </small>
+                </div>
+                <p class="mb-1">{{ message.body }}</p>
+            </a>
         {% endfor %}
-    </ul>
+    </div>
 {% endblock %}

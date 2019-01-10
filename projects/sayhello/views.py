@@ -16,7 +16,7 @@ def index():
             message = Message(body=body, name=name)  # 实例化模型类，创建数据库中的记录
             db.session.add(message)
             db.session.commit()
-            flash('Your message have been sent to the world!')
+            flash('发送成功!')
         return redirect(url_for('index'))
-    messages = Message.query.order_by(Message.timestamp.desc()).all()
+    messages = Message.query.order_by(Message.timestamp.desc()).limit(100).all()
     return render_template('index.html', messages=messages, form=form)

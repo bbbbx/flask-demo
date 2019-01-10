@@ -1,5 +1,7 @@
 from flask import Flask
 from flask_sqlalchemy import SQLAlchemy
+from flask_bootstrap import Bootstrap
+from flask_moment import Moment
 
 app = Flask('sayhello')
 app.config.from_pyfile('settings.py')
@@ -10,6 +12,8 @@ app.jinja_env.trim_blocks = True
 app.jinja_env.lstrip_blocks = True
 
 db = SQLAlchemy(app)
+bootstrap = Bootstrap(app)
+moment = Moment(app)
 
 # 因为需要将各个模块和程序实例关联起来，
 # 所以需要在构造文件中导入这些模块。

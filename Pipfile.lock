@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "0d210e72b0ceb7648cafb33879b3528786dea6cd552f20f07f49b62464533bf4"
+            "sha256": "e2cebb228c92e81e97379fa7d8620c3d8359f5f61ebef853ea6654bc84e94720"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -62,6 +62,14 @@
                 "sha256:4b9fd42d2824b79761799590697db45bf93daad511b130c50513af38da33df9b"
             ],
             "version": "==2.3.5"
+        },
+        "faker": {
+            "hashes": [
+                "sha256:228419b0a788a7ac867ebfafdd438461559ab1a0975edb607300852d9acaa78d",
+                "sha256:52a3dcc6a565b15fe1c95090321756d5a8a7c1caf5ab3df2f573ed70936ff518"
+            ],
+            "index": "pypi",
+            "version": "==1.0.1"
         },
         "flask": {
             "hashes": [
@@ -233,6 +241,13 @@
                 "sha256:809547455d012734b4252081db1e6b4fc731de2299f3755708c39863625e1c77"
             ],
             "version": "==1.2.15"
+        },
+        "text-unidecode": {
+            "hashes": [
+                "sha256:5a1375bb2ba7968740508ae38d92e1f889a0832913cb1c447d5e2046061a396d",
+                "sha256:801e38bd550b943563660a91de8d4b6fa5df60a542be9093f7abf819f86050cc"
+            ],
+            "version": "==1.2"
         },
         "vine": {
             "hashes": [
