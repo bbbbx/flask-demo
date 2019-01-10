@@ -9,7 +9,7 @@ if WIN:
 else:
     prefix = 'sqlite:////'
 
-dev_db = prefix + os.path.join(os.path.dirname(app.root_path), 'data.db')
+dev_db = prefix + os.path.join(os.path.dirname(app.root_path), 'data.sqlite3')
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'secret key')
 SQLALCHEMY_TRACK_MODIFICATIONS = False
