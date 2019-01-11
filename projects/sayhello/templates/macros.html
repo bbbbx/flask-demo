@@ -18,7 +18,8 @@
                 <li class="page-item disabled"><a href="#" class="page-link">&laquo;</a></li>
             {% endif %}
 
-            {%- for page in pagination.iter_pages() %}
+            {# http://flask-sqlalchemy.pocoo.org/2.3/api/#flask_sqlalchemy.Pagination.iter_pages #}
+            {%- for page in pagination.iter_pages(left_edge=2, left_current=3, right_current=4, right_edge=2) %}
                 {% if page %}
                     {% if page == pagination.page %}
                         <li class="page-item active" ><span class="page-link">{{ page }}</span></li>
@@ -26,7 +27,7 @@
                         <li class="page-item" ><a class="page-link" href="{{ url_for(endpoint, page=page) }}">{{ page }}</a></li>
                     {% endif %}
                 {% else %}
-                    <li class="page-item"><span class="page-link ellipsis">…</span></li>
+                    <li class="page-item"><span class="page-link">…</span></li>
                 {% endif %}
             {%- endfor %}
 

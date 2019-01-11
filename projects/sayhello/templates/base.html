@@ -44,7 +44,7 @@
     <script src="{{ url_for('static', filename='bootstrap.min.js') }}"></script>
     <script src="{{ url_for('static', filename='script.js') }}"></script>
     {{ moment.include_moment(local_js=url_for('static', filename='moment-with-locales.min.js')) }}
-    {{ moment.locale('zh-CN') }}
+    {{ moment.locale(auto_detect=True) }}
     <script src="{{ url_for('static', filename='xlsx.full.min.js') }}"></script>
 </body>
 </html>

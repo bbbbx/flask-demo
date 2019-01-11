@@ -9,8 +9,8 @@ def index():
     page = request.args.get('page')
     page = int(page) if page else 1
     form = HelloForm()
-    messages = Message.query.order_by(Message.timestamp.desc()).paginate(page=page, per_page=50)
-    print(messages)
+    # http://flask-sqlalchemy.pocoo.org/2.3/api/#flask_sqlalchemy.BaseQuery.paginate
+    pagination = Message.query.order_by(Message.timestamp.desc()).paginate(page=page, per_page=50)
     if form.validate_on_submit():
         name = form.name.data
         body = form.body.data
@@ -19,7 +19,7 @@ def index():
         db.session.commit()
         flash('发送成功!')
         return redirect(url_for('index'))
-    return render_template('index.html', form=form, messages=messages.items, pagination=messages)
+    return render_template('index.html', form=form, messages=pagination.items, pagination=pagination)
 
 
 @app.route('/xlsxdemo')

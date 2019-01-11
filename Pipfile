@@ -4,11 +4,11 @@ url = "https://pypi.org/simple"
 verify_ssl = true
 
 [dev-packages]
+faker = "*"
 
 [packages]
 flask = "*"
 python-dotenv = "*"
-flask-bootstrap = "*"
 flask-moment = "*"
 flask-wtf = "*"
 flask-sqlalchemy = "*"
@@ -17,8 +17,9 @@ flask-mail = "*"
 celery = "*"
 redis = "*"
 flask-ckeditor = "*"
-faker = "*"
 tablib = "*"
+bootstrap-flask = "*"
+flask-debugtoolbar = "*"
 
 [requires]
 python_version = "3.7"
