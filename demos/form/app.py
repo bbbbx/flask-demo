@@ -28,8 +28,8 @@ class UploadForm(FlaskForm):
     submit = SubmitField('提交')
 
 class PostForm(FlaskForm):
-    title = StringField('标题')
-    body = CKEditorField('正文')
+    title = StringField('标题', validators=[DataRequired()])
+    body = CKEditorField('正文', validators=[DataRequired()])
     submit = SubmitField('提交')
 
 def random_filename(filename):
@@ -40,7 +40,7 @@ def random_filename(filename):
 @app.route('/', methods=['GET', 'POST'])
 def index():
     form = NameForm()
-
+    theme_color = '#dcdcdc'
     # 提交表单后，如果数据能被所有验证函数接受，
     # 那么validate_onsubmit() 方法的返回值为True，
     # 否则返回 False。
@@ -55,7 +55,7 @@ def index():
     with open(filename, 'r') as f:
         for line in f.readlines():
             database += line
-    return render_template('index.html', form=form, name=session.get('name'), database=database)
+    return render_template('index.html', theme_color = theme_color, form=form, name=session.get('name'), database=database)
 
 @app.route('/upload', methods=['GET', 'POST'])
 def upload():
@@ -84,7 +84,7 @@ def get_file(filename):
 @app.route('/edit', methods=['GET', 'POST'])
 def edit():
     form = PostForm()
-    if request.method == 'POST':
+    if request.method == 'POST' and form.validate_on_submit():
         title = request.form.get('title')
         body = request.form.get('body')
         # 防 XSS

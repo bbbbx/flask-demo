@@ -6,6 +6,14 @@
     {{ super() }}
     <link rel="shortcut icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-ico">
     <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <style>
+        :root {
+            --theme-color: {{ theme_color }};
+        }
+        footer {
+            color: var(--theme-color)
+        }
+    </style>
 {% endblock %}
 
 {% block navbar %}

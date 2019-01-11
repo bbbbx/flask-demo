@@ -17,6 +17,7 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - 生成测试假数据：[joke2k/faker](https://github.com/joke2k/faker)
 - Web 服务器：uWSGI
 - 代理服务器：Nginx
+- 表格化导出 XLS、CSV、JSON、YAML 等格式：[kennethreitz/tablib](https://github.com/kennethreitz/tablib)
 
 ## 原型设计工具
 

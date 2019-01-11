@@ -1,0 +1,10 @@
+// $theme-color: (
+//     "primary": #0074d9,
+//     "danger": #ff4136
+// );
+
+$theme-colors: (
+  "custom-color": #900
+);
+
+@import '../bootstrap/scss/bootstrap'

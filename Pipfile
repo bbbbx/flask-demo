@@ -18,6 +18,7 @@ celery = "*"
 redis = "*"
 flask-ckeditor = "*"
 faker = "*"
+tablib = "*"
 
 [requires]
 python_version = "3.7"
