@@ -6,20 +6,21 @@ from sayhello.forms import HelloForm
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    page = request.args.get('page')
+    page = int(page) if page else 1
     form = HelloForm()
-    if request.method == 'POST':
-        if form.validate_on_submit() is False:
-            flash('参数错误！', category='error')
-        else:
-            name = form.name.data
-            body = form.body.data
-            message = Message(body=body, name=name)  # 实例化模型类，创建数据库中的记录
-            db.session.add(message)
-            db.session.commit()
-            flash('发送成功!')
+    messages = Message.query.order_by(Message.timestamp.desc()).paginate(page=page, per_page=50)
+    print(messages)
+    if form.validate_on_submit():
+        name = form.name.data
+        body = form.body.data
+        message = Message(body=body, name=name)
+        db.session.add(message)
+        db.session.commit()
+        flash('发送成功!')
         return redirect(url_for('index'))
-    messages = Message.query.order_by(Message.timestamp.desc()).limit(100).all()
-    return render_template('index.html', messages=messages, form=form)
+    return render_template('index.html', form=form, messages=messages.items, pagination=messages)
+
 
 @app.route('/xlsxdemo')
 def xlsxdemo():

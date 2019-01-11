@@ -1,12 +1,15 @@
 {% extends 'base.html' %}
+{% from 'macros.html' import form_field, render_pagination %}
 
 {% block content %}
-    <form action="{{ request.full_path }}" method="POST" class="form-group">
+    <form action="{{ request.full_path }}" method="POST" class="form-group hello-form">
         {{ form.csrf_token }}
-        {{ form.name.label(class="font-weight-bold") }}: 
-        {{ form.name(class="form-control") }}
-        {{ form.body.label(class="font-weight-bold") }}: 
-        {{ form.body(class="form-control form-text") }}<br />
+        <div class="form-group required">
+            {{ form_field(form.name, class="form-control") }}
+        </div>
+        <div class="form-group required">
+            {{ form_field(form.body, class="form-control") }}
+        </div>
         {{ form.submit(class="btn btn-success") }}
     </form>
     <h5>
@@ -31,4 +34,6 @@
             </a>
         {% endfor %}
     </div>
+
+    {{ render_pagination(pagination, 'index') }}
 {% endblock %}
