@@ -4,10 +4,11 @@ from sayhello import app, db
 from sayhello.models import Message
 from sayhello.forms import HelloForm
 
-@app.route('/', methods=['GET', 'POST'])
-def index():
-    page = request.args.get('page')
-    page = int(page) if page else 1
+# @app.route('/', methods=['GET', 'POST'])
+@app.route('/', methods=['GET', 'POST'], defaults={'page': 1})
+@app.route('/<int:page>')
+def index(page):
+    # page = request.args.get('page', 1, type=int)
     form = HelloForm()
     # http://flask-sqlalchemy.pocoo.org/2.3/api/#flask_sqlalchemy.BaseQuery.paginate
     pagination = Message.query.order_by(Message.timestamp.desc()).paginate(page=page, per_page=50)
