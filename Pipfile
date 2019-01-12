@@ -20,6 +20,7 @@ flask-ckeditor = "*"
 tablib = "*"
 bootstrap-flask = "*"
 flask-debugtoolbar = "*"
+unidecode = "*"
 
 [requires]
 python_version = "3.7"

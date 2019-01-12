@@ -1,8 +1,10 @@
 import os
+import click
 from flask import Flask, render_template
 from bluelog.blueprints import auth, blog, admin
 from bluelog.settings import config
 from bluelog.extensions import bootstrap, db, mail, moment, ckeditor
+from bluelog.models import Admin, Category
 
 def create_app(config_name=None):
     if config_name is None:
@@ -42,12 +44,49 @@ def register_shell_context(app):
         return dict(db=db)
 
 def register_template_context(app):
-    pass
+    @app.context_processor
+    def make_template_context():
+        admin = Admin.query.first()
+        categories = Category.query.order_by(Category.name).all()
+        return dict(admin=admin, categories=categories)
+
 
 def register_errors(app):
     @app.errorhandler(400)
     def bad_request(e):
         return render_template('errors/400.html'), 400
 
+    @app.errorhandler(404)
+    def page_not_found(e):
+        return render_template('errors/404.html'), 404
+
+    @app.errorhandler(500)
+    def server_error(e):
+        return render_template('errors/500.html'), 500
+
 def register_commands(app):
-    pass
+    @app.cli.command()
+    @click.option('--category', default=10, help='Quantity of categories, default is 10.')
+    @click.option('--post', default=50, help='Quantity of posts, default is 50.')
+    @click.option('--comment', default=500, help='Quantity of comments, default is 500.')
+    def forge(category, post, comment):
+        """Generate fake data."""
+        from bluelog.fakes import fake_admin, fake_categories, fake_posts, fake_comments
+
+        db.drop_all()
+        db.create_all()
+
+        click.echo('Generating the administrator...')
+        fake_admin()
+
+        click.echo('Generating %d categories...' % category)
+        fake_categories(category)
+
+        click.echo('Generating %d posts...' % post)
+        fake_posts(post)
+
+        click.echo('Generating %d comment...' % comment)
+        fake_comments(comment)
+
+        click.echo('Done.')
+

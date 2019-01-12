@@ -20,11 +20,12 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - 调试工具：flask-debugtoolbar
 - 用户认证：flask-login
 - 将数据序列化为字符串：[pallets/itsdangerous](https://github.com/pallets/itsdangerous)，可用于将用户 ID 生成 token 来传输。
-- 生成 slug（将标题装换为音译，可读性好，对搜索引擎和用户友好）：unidecode
+- 生成 slug（将标题装换为音译，可读性好，对搜索引擎和用户友好）：avian/unidecode
 - Web 服务器：uWSGI
 - 代理服务器：Nginx
 - 表格化导出 XLS、CSV、JSON、YAML 等格式：[kennethreitz/tablib](https://github.com/kennethreitz/tablib)
     - 前端纯 JS 操作 Excel 文件：xlsx.js
+- 拷贝到剪切板：cliboard.js
 
 ## 原型设计工具
 
