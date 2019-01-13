@@ -12,6 +12,7 @@ from flask_mail import Mail
 from flask_ckeditor import CKEditor
 from flask_moment import Moment
 from flask_login import LoginManager
+from flask_wtf.csrf import CSRFProtect
 
 # 实例化
 bootstrap = Bootstrap()
@@ -20,6 +21,7 @@ mail = Mail()
 moment = Moment()
 ckeditor = CKEditor()
 login_manager = LoginManager()
+csrf = CSRFProtect()
 
 @login_manager.user_loader
 def load_user(user_id):

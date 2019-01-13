@@ -1,9 +1,10 @@
 import os
 import click
 from flask import Flask, render_template
+from flask_wtf.csrf import CSRFError
 from bluelog.blueprints import auth, blog, admin
 from bluelog.settings import config
-from bluelog.extensions import bootstrap, db, mail, moment, ckeditor, login_manager
+from bluelog.extensions import bootstrap, db, mail, moment, ckeditor, login_manager, csrf
 from bluelog.models import Admin, Category
 
 def create_app(config_name=None):
@@ -33,6 +34,9 @@ def register_extensions(app):
     moment.init_app(app)
     ckeditor.init_app(app)
     login_manager.init_app(app)
+    # CSRFProtect 在模板中提供了一个 csrf_token() 函数，用来生成 CSRF 令牌值，
+    # 可以直接在表单中创建一个隐藏字段，将这个字段的 name 设为 csrf_token
+    csrf.init_app(app)
 
 def register_blueprints(app):
     app.register_blueprint(blog.blog_bp)
@@ -53,6 +57,10 @@ def register_template_context(app):
 
 
 def register_errors(app):
+    @app.errorhandler(CSRFError)
+    def handle_csrf_error(e):
+        return render_template('error/400.html', description=e.description), 400
+
     @app.errorhandler(400)
     def bad_request(e):
         return render_template('errors/400.html'), 400
