@@ -1,4 +1,5 @@
 {% extends 'base.html' %}
+{% from 'bootstrap/form.html' import render_form %}
 {% from 'bootstrap/pagination.html' import render_pagination %}
 
 {% block title %}{{ post.title }}{% endblock %}
@@ -20,7 +21,14 @@
         <div class="col-sm-8">
             {{ post.body|safe }}
             <div class="comments" id="comments">
-                <h3>{{ pagination.total }} Comments</h3>
+                <h3>
+                    {{ pagination.total }} 条评论
+                    <small>
+                        <a href="{{ url_for('.show_post', post_id=post.id, page=pagination.page or 1) }}#comments">
+                            最近的评论
+                        </a>
+                    </small>
+                </h3>
             </div>
             {% if comments %}
                 <ul class="list-group">
@@ -37,10 +45,10 @@
                                         {% endif %}
                                     </a>
                                     {% if comment.from_admin %}
-                                        <span class="badge badge-primary">Author</span>
+                                        <span class="badge badge-primary">作者</span>
                                     {% endif %}
                                     {% if comment.replied %}
-                                        <span class="badge badge-light">Reply</span>
+                                        <span class="badge badge-light">回复了</span>
                                     {% endif %}
                                 </h5>
                                 <small data-toggle="tooltip" data-placement="top" data-delay="500"
@@ -56,17 +64,27 @@
                             {%- endif -%}
                             <p class="mb-1">{{ comment.body }}</p>
                             <div class="float-right">
-                                <a class="btn btn-light btn-sm" href="{{ url_for('.reply_comment', comment_id=comment.id) }}">Reply</a>
+                                <a class="btn btn-light btn-sm" href="{{ url_for('.reply_comment', comment_id=comment.id) }}">回复该评论</a>
                             </div>
                         </li>
                     {% endfor %}
                 </ul>
             {% else %}
-                <div class="tip">No comments.</div>
+                <div class="tip">没有评论。</div>
             {% endif %}
             {% if comments %}
                 {{ render_pagination(pagination, fragment='#comments') }}
             {% endif %}
+
+            {% if request.args.get('reply') %}
+                <div class="alert alert-dark">
+                    回复 <strong>{{ request.args.get('author') }}</strong>：
+                    <a href="{{ url_for('.show_post', post_id=post.id) }}" class="float-right">取消</a>
+                </div>
+            {% endif %}
+            <div id="comment-form">
+                {{ render_form(form, action=request.full_path, id="comment-form") }}
+            </div>
         </div>
         <div class="col-sm-4">
             {% include "blog/_sidebar.html" %}
