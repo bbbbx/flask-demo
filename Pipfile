@@ -21,6 +21,7 @@ tablib = "*"
 bootstrap-flask = "*"
 flask-debugtoolbar = "*"
 unidecode = "*"
+flask-login = "*"
 
 [requires]
 python_version = "3.7"

@@ -18,7 +18,11 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - 在 Python 中嵌入 C：ctypes
 - 生成测试假数据：[joke2k/faker](https://github.com/joke2k/faker)
 - 调试工具：flask-debugtoolbar
-- 用户认证：flask-login
+- 管理用户认证（根据用户的身份开放不同的功能）：flask-login，Flask-Login 要求表示用户的模型类必须实现下列的这几个属性或方法，以便用来判断用户的认证状态：
+    - `is_authenticated`：如果用户已通过认证，则返回 `True`
+    - `is_active`：是否允许该用户登录
+    - `is_anonymous`：如果当前用户未登录，则返回 `True`
+    - `get_id()`：以 Unicode 形式返回用户的唯一标识符
 - 将数据序列化为字符串：[pallets/itsdangerous](https://github.com/pallets/itsdangerous)，可用于将用户 ID 生成 token 来传输。
 - 生成 slug（将标题装换为音译，可读性好，对搜索引擎和用户友好）：avian/unidecode
 - Web 服务器：uWSGI
@@ -26,6 +30,8 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - 表格化导出 XLS、CSV、JSON、YAML 等格式：[kennethreitz/tablib](https://github.com/kennethreitz/tablib)
     - 前端纯 JS 操作 Excel 文件：xlsx.js
 - 拷贝到剪切板：cliboard.js
+- 常用的计算散列值的 Python 库有 [PassLib](https://bitbucket.org/ecollins/passlib)、[bcrybt](https://github.com/pyca/bcrypt)
+    - Werkzeug 在 `security` 模块中提供了一个 `generate_password_hash(password, method='pbkdf2:sha256', salt_length=8)` 函数用于生成散列值，`check_password_hash(pwhash, password)` 函数用来检查密码散列值与密码是否对应。
 
 ## 原型设计工具
 

@@ -3,7 +3,7 @@ import click
 from flask import Flask, render_template
 from bluelog.blueprints import auth, blog, admin
 from bluelog.settings import config
-from bluelog.extensions import bootstrap, db, mail, moment, ckeditor
+from bluelog.extensions import bootstrap, db, mail, moment, ckeditor, login_manager
 from bluelog.models import Admin, Category
 
 def create_app(config_name=None):
@@ -32,6 +32,7 @@ def register_extensions(app):
     mail.init_app(app)
     moment.init_app(app)
     ckeditor.init_app(app)
+    login_manager.init_app(app)
 
 def register_blueprints(app):
     app.register_blueprint(blog.blog_bp)
