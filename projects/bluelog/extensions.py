@@ -26,3 +26,7 @@ def load_user(user_id):
     from bluelog.models import Admin
     user = Admin.query.get(user_id)
     return user
+
+login_manager.login_view = 'auth.login'
+login_manager.login_message = u'请先登录！'
+login_manager.login_message_category = 'warning'
