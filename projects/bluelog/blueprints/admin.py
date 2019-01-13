@@ -5,7 +5,7 @@ from flask_ckeditor import upload_fail, upload_success
 from bluelog.models import Post, Category, Comment
 from bluelog.utils import redirect_back, allow_file
 from bluelog.extensions import db
-from bluelog.forms import PostForm, SettingsForm
+from bluelog.forms import PostForm, SettingsForm, CategoryForm
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -53,7 +53,7 @@ def edit_post(post_id):
         post.body = form.body.data
         post.category = Category.query.get(form.category.data)
         db.session.commit()
-        flash('上传成功。', 'success')
+        flash('更新成功。', 'success')
         return redirect(url_for('blog.show_post', post_id=post.id))
     form.title.data = post.title
     form.body.data = post.body
@@ -73,15 +73,23 @@ def set_comment(post_id):
     db.session.commit()
     return redirect_back()
 
-@admin_bp.route('/new_post')
+@admin_bp.route('/post/new', methods=['GET', 'POST'])
 @login_required
 def new_post():
-    pass
-
-@admin_bp.route('/new_category')
-@login_required
-def new_category():
-    pass
+    form = PostForm()
+    if form.validate_on_submit():
+        title = form.title.data
+        body = form.body.data
+        category = Category.query.get(form.category.data)
+        post = Post(title=title, body=body, category=category)
+        # 等价于：
+        # category_id = form.category.data
+        # post = Post(title=title, body=body, category_id=category_id)
+        db.session.add(post)
+        db.session.commit()
+        flash('新建成功。', 'success')
+        return redirect(url_for('blog.show_post', post_id=post.id))
+    return render_template('admin/new_post.html', form=form)
 
 @admin_bp.route('/manage_post')
 @login_required
@@ -97,10 +105,35 @@ def manage_post():
 def manage_category():
     return render_template('admin/manage_category.html')
 
-@admin_bp.route('/category/<int:category_id>/edit')
+@admin_bp.route('/category/<int:category_id>/edit', methods=['GET', 'POST'])
 @login_required
 def edit_category(category_id):
-    pass
+    form = CategoryForm()
+    category = Category.query.get_or_404(category_id)
+    if category.id == 1:
+        flash('不能编辑默认分类。', 'warning')
+        return redirect(url_for('blog.index'))
+    if form.validate_on_submit():
+        category.name = form.name.data
+        db.session.commit()
+        flash('更新成功。', 'success')
+        return redirect(url_for('.manage_category'))
+    form.name.data = category.name
+    return render_template('admin/edit_category.html', form=form)
+
+@admin_bp.route('/category/new', methods=['GET', 'POST'])
+@login_required
+def new_category():
+    form = CategoryForm()
+    if form.validate_on_submit():
+        name = form.name.data
+        category = Category(name=name)
+        db.session.add(category)
+        db.session.commit()
+        flash('新建成功。', 'success')
+        return redirect(url_for('.manage_category'))
+    return render_template('admin/new_category.html', form=form)
+
 
 @admin_bp.route('/category/<int:category_id>/delete', methods=['POST'])
 @login_required
