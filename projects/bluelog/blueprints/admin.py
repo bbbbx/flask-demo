@@ -1,6 +1,11 @@
-from flask import Blueprint, render_template, redirect, url_for
-from flask_login import login_required
-from bluelog.models import Post
+import os
+from flask import Blueprint, render_template, redirect, url_for, current_app, request, flash, send_from_directory
+from flask_login import login_required, current_user
+from flask_ckeditor import upload_fail, upload_success
+from bluelog.models import Post, Category, Comment
+from bluelog.utils import redirect_back, allow_file
+from bluelog.extensions import db
+from bluelog.forms import PostForm, SettingsForm
 
 admin_bp = Blueprint('admin', __name__)
 
@@ -11,33 +16,131 @@ admin_bp = Blueprint('admin', __name__)
 # def login_protect():
 #     pass
 
-@admin_bp.route('/settings')
+@admin_bp.route('/settings', methods=['GET', 'POST'])
 @login_required
 def settings():
-    return render_template('admin/settings.html')
+    form = SettingsForm()
+    if form.validate_on_submit():
+        current_user.name = form.name.data
+        current_user.blog_title = form.blog_title.data
+        current_user.blog_subtitle = form.blog_subtitle.data
+        current_user.about = form.about.data
+        db.session.commit()
+        flash('更新成功。', 'success')
+        return redirect(url_for('blog.index'))
+    form.name.data = current_user.name
+    form.blog_title.data = current_user.blog_title
+    form.blog_subtitle.data = current_user.blog_subtitle
+    form.about.data = current_user.about
+    return render_template('admin/settings.html', form=form)
 
-@admin_bp.route('/post/delete/<id>', methods=['POST'])
-def delete_post(id):
-    post = Post.query.get(id)
-    post.delete()
-    return redirect(url_for('index'))
+@admin_bp.route('/post/delete/<post_id>', methods=['POST'])
+@login_required
+def delete_post(post_id):
+    post = Post.query.get(post_id)
+    db.session.delete(post)
+    db.session.commit()
+    flash('删除成功。', 'success')
+    return redirect_back()
+
+@admin_bp.route('/post/edit/<post_id>', methods=['GET', 'POST'])
+@login_required
+def edit_post(post_id):
+    post = Post.query.get_or_404(post_id)
+    form = PostForm()
+    if form.validate_on_submit():
+        post.title = form.title.data
+        post.body = form.body.data
+        post.category = Category.query.get(form.category.data)
+        db.session.commit()
+        flash('上传成功。', 'success')
+        return redirect(url_for('blog.show_post', post_id=post.id))
+    form.title.data = post.title
+    form.body.data = post.body
+    form.category.data = post.category_id
+    return render_template('admin/edit_post.html', form=form)
+
+@admin_bp.route('/post/<post_id>/set_comment', methods=['POST'])
+@login_required
+def set_comment(post_id):
+    post = Post.query.get_or_404(post_id)
+    if post.can_comment:
+        post.can_comment = False
+        flash('关闭成功。', 'success')
+    else:
+        post.can_comment = True
+        flash('开启成功。', 'success')
+    db.session.commit()
+    return redirect_back()
 
 @admin_bp.route('/new_post')
+@login_required
 def new_post():
     pass
 
 @admin_bp.route('/new_category')
+@login_required
 def new_category():
     pass
 
 @admin_bp.route('/manage_post')
+@login_required
 def manage_post():
-    pass
+    post_page = request.args.get('page', 1, type=int)
+    post_per_page = current_app.config['BLUELOG_MANAGE_POST_PER_PAGE']
+    pagination = Post.query.paginate(page=post_page, per_page=post_per_page)
+    posts = pagination.items
+    return render_template('admin/manage_post.html', posts=posts, pagination=pagination, page=post_page)
 
-@admin_bp.route('/manage_category')
+@admin_bp.route('/category/manage')
+@login_required
 def manage_category():
     pass
 
-@admin_bp.route('/manage_comment')
+@admin_bp.route('/comment/manage')
+@login_required
 def manage_comment():
-    pass
+    filter_rule = request.args.get('filter', 'all')   # 'all', 'reviewed', 'admin'
+    comment_page = request.args.get('page', 1, type=int)
+    comment_per_page = current_app.config['BLUELOG_MANAGE_POST_PER_PAGE']
+    if filter_rule == 'unreviewed':
+        filtered_comment = Comment.query.filter_by(reviewed=False)
+    elif filter_rule == 'admin':
+        filtered_comment = Comment.query.filter_by(from_admin=True)
+    else:
+        filtered_comment = Comment.query
+
+    pagination = filtered_comment.order_by(Comment.timestamp.asc()).paginate(comment_page, per_page=comment_per_page)
+    comments = pagination.items
+    return render_template('admin/manage_comment.html', page=comment_page, comments=comments, pagination=pagination)
+
+@admin_bp.route('/comment/<int:comment_id>/delete', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    db.session.delete(comment)
+    db.session.commit()
+    flash('评论已删除。', 'success')
+    return redirect_back()
+
+@admin_bp.route('/comment/<int:comment_id>/approve', methods=['POST'])
+@login_required
+def approve_comment(comment_id):
+    comment = Comment.query.get_or_404(comment_id)
+    comment.reviewed = True
+    db.session.commit()
+    flash('评论已发布。', 'success')
+    return redirect_back()
+
+@admin_bp.route('/uploads/<path:filename>')
+def get_image(filename):
+    return send_from_directory(current_app.config['BLUELOG_UPLOAD_PATH'], filename=filename)
+
+@admin_bp.route('/upload', methods=['POST'])
+def upload_image():
+    f = request.files.get('upload')
+    if not allow_file(f.filename):
+        return upload_fail('只允许上传 png、jpg、jpeg、gif 图片！')
+    f.save(os.path.join(current_app.config['BLUELOG_UPLOAD_PATH'], f.filename))
+    url = url_for('.get_image', filename=f.filename)
+    return upload_success(url, f.filename)

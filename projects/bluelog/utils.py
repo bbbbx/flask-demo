@@ -1,12 +1,16 @@
 import re
 from unidecode import unidecode
-from flask import request, redirect, url_for
+from flask import request, redirect, url_for, current_app
 try:
     from urlparse import urlparse, urljoin
 except ImportError:
     from urllib.parse import urlparse, urljoin
 
 _punct_re = re.compile(r'[\t !"#$%&\'()*\-/<=>?@\[\\\]^_`{|},.]+')
+
+def allow_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in current_app.config['BLUELOG_ALLOWED_IMAGE_EXTENSIONS']
 
 def redirect_back(default='blog.index', **kwargs):
     for target in request.args.get('next'), request.referrer:
