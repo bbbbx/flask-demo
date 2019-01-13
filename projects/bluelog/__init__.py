@@ -49,11 +49,7 @@ def register_template_context(app):
     def make_template_context():
         admin = Admin.query.first()
         categories = Category.query.order_by(Category.name).all()
-        class User(object):
-            def __init__(self, is_authenticated):
-                self.is_authenticated = is_authenticated
-        current_user = User(False)
-        return dict(admin=admin, categories=categories, current_user=current_user)
+        return dict(admin=admin, categories=categories)
 
 
 def register_errors(app):

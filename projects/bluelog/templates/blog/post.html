@@ -81,10 +81,10 @@
                     回复 <strong>{{ request.args.get('author') }}</strong>：
                     <a href="{{ url_for('.show_post', post_id=post.id) }}" class="float-right">取消</a>
                 </div>
+                <div id="comment-form">
+                    {{ render_form(form, action=request.full_path, id="comment-form") }}
+                </div>
             {% endif %}
-            <div id="comment-form">
-                {{ render_form(form, action=request.full_path, id="comment-form") }}
-            </div>
         </div>
         <div class="col-sm-4">
             {% include "blog/_sidebar.html" %}

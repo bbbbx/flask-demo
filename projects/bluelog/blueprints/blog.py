@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, request, current_app, url_for, redirect, make_response, flash
+from flask_login import current_user
 from bluelog.models import Post, Comment, Category
 from bluelog.forms import AdminCommentForm, CommentForm
 from bluelog.emails import send_new_comment_email, send_new_reply_email
@@ -37,11 +38,6 @@ def show_post(post_id):
     pagination = Comment.query.with_parent(post).filter_by(reviewed=True).order_by(Comment.timestamp.asc()).paginate(
         page=comment_page, per_page=comment_per_page)
     comments = pagination.items
-
-    class User(object):
-        def __init__(self, is_authenticated):
-            self.is_authenticated = is_authenticated
-    current_user = User(False)
 
     if current_user.is_authenticated:  # 已登录则使用管理员表单
         form = AdminCommentForm() 

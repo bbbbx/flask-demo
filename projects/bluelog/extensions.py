@@ -20,3 +20,9 @@ mail = Mail()
 moment = Moment()
 ckeditor = CKEditor()
 login_manager = LoginManager()
+
+@login_manager.user_loader
+def load_user(user_id):
+    from bluelog.models import Admin
+    user = Admin.query.get(user_id)
+    return user

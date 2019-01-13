@@ -1,0 +1,12 @@
+{% extends 'base.html' %}
+{% from 'bootstrap/form.html' import render_form %}
+
+{% block title %}登录{% endblock %}
+
+{% block content %}
+    <div>
+        {{ render_form(form) }}
+    </div>
+{% endblock %}
+
+{% block footer %}{% endblock %}

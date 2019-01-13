@@ -5,15 +5,15 @@ from flask_ckeditor import CKEditorField
 from bluelog.models import Category
 
 class LoginForm(FlaskForm):
-    username = StringField('Username', validators=[DataRequired(), Length(1, 20)])
-    password = StringField('Password', validators=[DataRequired(), Length(8, 128)])
-    remeber = BooleanField('Remeber me')
-    submit = SubmitField('Log in')
+    username = StringField('用户名', validators=[DataRequired(), Length(1, 20)])
+    password = PasswordField('密码', validators=[DataRequired(), Length(8, 128)])
+    remeber = BooleanField('记住我？')
+    submit = SubmitField('登录')
 
 class PostForm(FlaskForm):
-    title = StringField('Title', validators=[DataRequired(), Length(1, 60)])
-    body = CKEditorField('Body', validators=[DataRequired()])
-    category = SelectField('Category', coerce=int, default=1)
+    title = StringField('标题', validators=[DataRequired(), Length(1, 60)])
+    body = CKEditorField('正文', validators=[DataRequired()])
+    category = SelectField('分类', coerce=int, default=1)
     submit = SubmitField()
 
     def __init__(self, *args, **kwargs):
