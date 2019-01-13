@@ -95,7 +95,23 @@ def manage_post():
 @admin_bp.route('/category/manage')
 @login_required
 def manage_category():
+    return render_template('admin/manage_category.html')
+
+@admin_bp.route('/category/<int:category_id>/edit')
+@login_required
+def edit_category(category_id):
     pass
+
+@admin_bp.route('/category/<int:category_id>/delete', methods=['POST'])
+@login_required
+def delete_category(category_id):
+    category = Category.query.get_or_404(category_id)
+    if category.id == 1:
+        flash('不能删除默认分类。', 'warning')
+        return redirect(url_for('blog.index'))
+    category.delete()
+    flash('删除成功。', 'success')
+    return redirect(url_for('.manage_category'))
 
 @admin_bp.route('/comment/manage')
 @login_required

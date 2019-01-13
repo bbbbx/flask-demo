@@ -1,5 +1,5 @@
 {% extends 'base.html' %}
-{% from 'macros.html' import pager %}
+{% from 'bootstrap/pagination.html' import render_pagination %}
 
 {% block title %}{{ category.name }}{% endblock %}
 
@@ -13,11 +13,11 @@
         <div class="col-sm-8">
             {% include 'blog/_posts.html' %}
             {% if posts %}
-                <div class="posts-footer">{{ pager(pagination) }}</div>
+                <div class="posts-footer">{{ render_pagination(pagination) }}</div>
             {% endif %}
         </div>
         <div class="col-sm-4">
-                {% include 'blog/_sidebar.html' %}
+            {% include 'blog/_sidebar.html' %}
         </div>
     </div>
 {% endblock %}

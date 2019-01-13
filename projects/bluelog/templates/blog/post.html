@@ -64,7 +64,17 @@
                             {%- endif -%}
                             <p class="mb-1">{{ comment.body }}</p>
                             <div class="float-right">
-                                <a class="btn btn-light btn-sm" href="{{ url_for('.reply_comment', comment_id=comment.id) }}">回复该评论</a>
+                                {% if post.can_comment %}
+                                    <a class="btn btn-light btn-sm" href="{{ url_for('.reply_comment', comment_id=comment.id) }}">回复该评论</a>
+                                {% endif %}
+                                {% if current_user.is_authenticated %}
+                                    <a class="btn btn-light btn-sm" href="mailto:{{ comment.email }}">给TA发邮件</a>
+                                    <form class="inline" method="post"
+                                            action="{{ url_for('admin.delete_comment', comment_id=comment.id, next=request.full_path) }}">
+                                        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
+                                        <button type="submit" class="btn btn-danger btn-sm" onclick="return confirm('确定要删除该评论吗？');">删除</button>
+                                    </form>
+                                {% endif %}
                             </div>
                         </li>
                     {% endfor %}
@@ -81,8 +91,15 @@
                     回复 <strong>{{ request.args.get('author') }}</strong>：
                     <a href="{{ url_for('.show_post', post_id=post.id) }}" class="float-right">取消</a>
                 </div>
+            {% endif %}
+
+            {% if post.can_comment %}
                 <div id="comment-form">
                     {{ render_form(form, action=request.full_path, id="comment-form") }}
+                </div>
+            {% else %}
+                <div class="tip">
+                    <h5>评论已关闭。</h5>
                 </div>
             {% endif %}
         </div>
