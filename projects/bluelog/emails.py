@@ -19,7 +19,7 @@ def send_new_comment_email(post):
     post_url = url_for('blog.show_post', post_id=post.id, _external=True) + '#comments'
     send_mail(
         subject='New comment',
-        to=current_app.config['BLUELOG_ADMIN_EMAIL'],
+        to=current_app.config['BLUELOG_EMAIL'],
         html='''
         <p>New comment in post <i>%s</i>, click the link below to check:</p>
         <p><a href="%s">%s</a></p>

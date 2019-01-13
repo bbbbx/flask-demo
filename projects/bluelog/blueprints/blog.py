@@ -35,7 +35,7 @@ def show_post(post_id):
     post = Post.query.get_or_404(post_id)
     comment_page = request.args.get('page', 1, type=int)
     comment_per_page = current_app.config['BLUELOG_COMMENT_PER_PAGE']
-    pagination = Comment.query.with_parent(post).filter_by(reviewed=True).order_by(Comment.timestamp.asc()).paginate(
+    pagination = Comment.query.with_parent(post).filter_by(reviewed=True).order_by(Comment.timestamp.desc()).paginate(
         page=comment_page, per_page=comment_per_page)
     comments = pagination.items
 
@@ -63,7 +63,7 @@ def show_post(post_id):
         db.session.add(comment)
         db.session.commit()
         if current_user.is_authenticated:  # 根据登录状态显示不同的提示信息
-            flash('评论以发布。', 'success')
+            flash('评论已发布。', 'success')
         else:
             flash('感谢你的评论，审核通过后将会显示。', 'info')
             send_new_comment_email(post)

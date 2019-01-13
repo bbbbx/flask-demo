@@ -11,10 +11,6 @@ admin_bp = Blueprint('admin', __name__)
 # def login_protect():
 #     pass
 
-@admin_bp.route('/post/', methods=['POST'])
-def new_post():
-    pass
-
 @admin_bp.route('/settings')
 @login_required
 def settings():
@@ -25,3 +21,23 @@ def delete_post(id):
     post = Post.query.get(id)
     post.delete()
     return redirect(url_for('index'))
+
+@admin_bp.route('/new_post')
+def new_post():
+    pass
+
+@admin_bp.route('/new_category')
+def new_category():
+    pass
+
+@admin_bp.route('/manage_post')
+def manage_post():
+    pass
+
+@admin_bp.route('/manage_category')
+def manage_category():
+    pass
+
+@admin_bp.route('/manage_comment')
+def manage_comment():
+    pass
