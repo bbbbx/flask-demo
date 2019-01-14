@@ -33,6 +33,22 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - 拷贝到剪切板：cliboard.js
 - 常用的计算散列值的 Python 库有 [PassLib](https://bitbucket.org/ecollins/passlib)、[bcrybt](https://github.com/pyca/bcrypt)
     - Werkzeug 在 `security` 模块中提供了一个 `generate_password_hash(password, method='pbkdf2:sha256', salt_length=8)` 函数用于生成散列值，`check_password_hash(pwhash, password)` 函数用来检查密码散列值与密码是否对应。
+- Exception 追踪：[Sentry](https://sentry.io/welcome/)
+- Flask-Avatars：生成头像
+- [Whoosh](https://bitbucket.org/mchaput/whoosh)：全文搜索
+- Flask-Whooshee：集成 Whoosh
+- [Flask-Dropzone](https://github.com/greyli/flask-dropzone)：使用 Dropzone.js 在 Flask 应用中上传文件
+- 占位图片：
+    - 基于 Unsplash 的 [Lorem Picsum](http://picsum.photos/)
+    - 使用 Pillow 生成图片：
+        ```python
+        >>> from PIL import Image
+        >>> import random
+        >>> r = lambda: random.randint(128, 255)
+        >>> img = Image.new(mode='RGB', size=(800, 800), color=(r(), r(), r()))
+        >>> img.save(the_desctination_path)  # 或是调用 img.show() 直接显示图片
+        ```
+- 开源的图标集：[Font Awesome](https://fontawesome.com/)、[Material Design Icons](https://material.io/icons)、[Octicons](https://octicons.github.com/)、和 Bootstrap 集成良好的 [Iconic](https://useiconic.com/open)
 
 ## 原型设计工具
 
