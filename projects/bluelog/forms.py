@@ -7,7 +7,7 @@ from bluelog.models import Category
 class LoginForm(FlaskForm):
     username = StringField('用户名', validators=[DataRequired(), Length(1, 20)])
     password = PasswordField('密码', validators=[DataRequired(), Length(8, 128)])
-    remeber = BooleanField('记住我？')
+    remember_me = BooleanField('记住我？')
     submit = SubmitField('登录')
 
 class PostForm(FlaskForm):

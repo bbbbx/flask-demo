@@ -16,11 +16,11 @@ def login():
     if form.validate_on_submit():
         username = form.username.data
         password = form.password.data
-        remeber = form.remeber.data
+        remember_me = form.remember_me.data
         admin = Admin.query.first()
-        if admin:
+        if admin is not None:
             if username == admin.username and admin.validate_password(password):
-                login_user(admin, remeber)
+                login_user(admin, remember_me)
                 flash('欢迎回来。', 'info')
                 return redirect_back()
             flash('无效的用户名或密码。', 'warning')
