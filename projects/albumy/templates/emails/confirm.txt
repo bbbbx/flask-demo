@@ -1,0 +1,9 @@
+你好 {{ user.username }}，
+
+欢迎来到 <b>Albumy！
+
+请访问下列的地址来确认你的邮箱地址：
+
+    {{ url_for('auth.confirm', token=token, _external=True) }}
+
+(请不要回复该邮件，该邮箱不作回复。)
