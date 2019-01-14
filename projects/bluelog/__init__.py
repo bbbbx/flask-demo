@@ -5,7 +5,7 @@ from flask_wtf.csrf import CSRFError
 from flask_login import current_user
 from bluelog.blueprints import auth, blog, admin
 from bluelog.settings import config
-from bluelog.extensions import bootstrap, db, mail, moment, ckeditor, login_manager, csrf, celery
+from bluelog.extensions import bootstrap, db, mail, moment, ckeditor, login_manager, csrf, celery, sentry
 from bluelog.models import Admin, Category, Comment
 
 def create_app(config_name=None):
@@ -39,6 +39,7 @@ def register_extensions(app):
     # 可以直接在表单中创建一个隐藏字段，将这个字段的 name 设为 csrf_token
     csrf.init_app(app)
     celery.conf.update(app.config)
+    sentry.init_app(app, dsn=os.getenv('SENTRY_DSN'))
 
 def register_blueprints(app):
     app.register_blueprint(blog.blog_bp)

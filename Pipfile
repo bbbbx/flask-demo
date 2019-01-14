@@ -22,6 +22,8 @@ bootstrap-flask = "*"
 flask-debugtoolbar = "*"
 unidecode = "*"
 flask-login = "*"
+sentry-sdk = "==0.6.6"
+raven = "*"
 
 [requires]
 python_version = "3.7"

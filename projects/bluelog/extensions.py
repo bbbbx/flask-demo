@@ -14,6 +14,7 @@ from flask_moment import Moment
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
 from celery import Celery
+from raven.contrib.flask import Sentry
 from bluelog.settings import BaseConfig
 
 # 实例化
@@ -25,6 +26,7 @@ ckeditor = CKEditor()
 login_manager = LoginManager()
 csrf = CSRFProtect()
 celery = Celery(__name__, broker=BaseConfig.CELERY_BROKER_URL, backend=BaseConfig.CELERY_RESULT_BACKEND)
+sentry = Sentry()
 
 @login_manager.user_loader
 def load_user(user_id):
