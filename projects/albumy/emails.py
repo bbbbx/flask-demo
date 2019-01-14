@@ -16,3 +16,9 @@ def send_mail(subject, to, template, **kwargs):
 
 def send_confirm_account_email(user, token, to):
     send_mail(subject='邮箱确认', to=to or user.email, template='emails/confirm', user=user, token=token)
+
+def send_reset_password_email(user, token):
+    send_mail(subject='重置密码', to=to or user.email, template='emails/reset_password', user=user, token=token)
+
+def send_change_email_email(user, token, to=None):
+    send_mail(subject='确认修改邮箱地址', to=to or user.email, template='emails/change_email', user=user, token=token)

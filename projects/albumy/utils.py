@@ -10,7 +10,7 @@ def generate_token(user, operation, expire_in=None, **kwargs):
     data.update(**kwargs)
     return s.dump(data)
 
-def validate_token(user, token, opration):
+def validate_token(user, token, opration, new_password=None):
     s = Serializer(current_app.config['SECRET_KEY'])
 
     try:
@@ -23,6 +23,8 @@ def validate_token(user, token, opration):
 
     if operation == Operations.CONFIRM:
         user.confirmed = True
+    elif operation == Operations.RESET_PASSWORD:
+        user.set_password(new_password)
     else:
         return False
 
