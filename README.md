@@ -5,9 +5,10 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 ## Flask 第三方扩展
 
 - UI：flask-bootstrap（很久没更新了）、[greyli/bootstrap-flask](https://github.com/greyli/bootstrap-flask) 或者不使用 Bootstrap。
+    - Bootstrap 主题：[startbootstrap](https://startbootstrap.com/)、[bootswatch](https://bootswatch.com/)
 - 数据库 ORM：flask-sqlalchemy
 - 邮件：flask-mail
-    - 异步任务队列：Celery + Redis + RabbitMQ
+    - 异步任务队列：Celery + Redis + RabbitMQ（启动 Celery `celery worker -A bluelog.celery_worker.celery --loglevel=info -E` 记得先导入环境变量）
 - 表单：flask-wtf
     - 文件上传：flask-wtf 的 `FileField`、flask-uploads
     - 富文本编辑器：flask-CKEditor（谨防 XSS）
@@ -92,6 +93,16 @@ static       GET      /static/<path:filename>
 
 ### 视图函数（view function）
 
+```python
+@app.route('/hello/<name>')
+def hello(name=None):
+    return render_template('hello.html', name=name)
+```
+
+其中的 `hello` 函数就是一个视图函数， **业务逻辑（business logic）** 的处理都应该在视图函数中处理，例如对数据库的 CURD、向任务队列（如 Celery）发起异步任务 等等。而 **展示逻辑（display logic）** 的处理应该在 HTML 模板（Jinja2）中处理。
+
+当你在 JS 中插入了太多了 jinja2 语法时，或许这时你考虑将程序转变为 Web API，然后专心用 JS 来写客户端。
+
 ### 蓝图（blueprint）
 
 当某个模块包含太多代码时，常见的做法是将单一模块升级为包，然后把源模块的内容分离成多个模块。例如将包含视图函数的的 `views.py` 转为 `blueprints` 子包。
@@ -101,3 +112,13 @@ static       GET      /static/<path:filename>
 例如，为了让移动设备拥有更好的体验，可以为移动设备创建一个单独的视图函数，这部分视图函数可以使用单独的 `mobile` 蓝图注册。
 
 蓝图对象可以使用的所有方法及属性：[http://flask.pocoo.org/docs/latest/api/#blueprint-objects](http://flask.pocoo.org/docs/latest/api/#blueprint-objects)
+
+### 上下文（Context）
+
+有 app context、request context、template context、shell context。
+
+## 其他
+
+### 什么是 slug？
+
+音译，即将中文转变为拼音。如将 “举个例子” 转为 “ju-ge-li-zi”，这样对用户和搜索引擎都友好，而不是将 ID 作为 URL。

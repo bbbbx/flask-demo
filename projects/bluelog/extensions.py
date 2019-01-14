@@ -13,6 +13,8 @@ from flask_ckeditor import CKEditor
 from flask_moment import Moment
 from flask_login import LoginManager
 from flask_wtf.csrf import CSRFProtect
+from celery import Celery
+from bluelog.settings import BaseConfig
 
 # 实例化
 bootstrap = Bootstrap()
@@ -22,6 +24,7 @@ moment = Moment()
 ckeditor = CKEditor()
 login_manager = LoginManager()
 csrf = CSRFProtect()
+celery = Celery(__name__, broker=BaseConfig.CELERY_BROKER_URL, backend=BaseConfig.CELERY_RESULT_BACKEND)
 
 @login_manager.user_loader
 def load_user(user_id):

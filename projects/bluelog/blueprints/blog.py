@@ -60,19 +60,21 @@ def show_post(post_id):
             author=author, email=email, site=site, body=body,
             from_admin=from_admin, post=post, reviewed=reviewed
         )
+        
+        replied_id = request.args.get('reply', type=int)
+        if replied_id:
+            replied_comment = Comment.query.filter_by(id=replied_id).first_or_404()
+            comment.replied = replied_comment
+            send_new_reply_email(replied_comment)   # 发送邮件给被恢复的用户
         db.session.add(comment)
         db.session.commit()
+
         if current_user.is_authenticated:  # 根据登录状态显示不同的提示信息
             flash('评论已发布。', 'success')
         else:
             flash('感谢你的评论，审核通过后将会显示。', 'info')
             send_new_comment_email(post)
-
-        replied_id = request.args.get('reply')
-        if replied_id:
-            replied_comment = Comment.query.get_or_404(replied_id)
-            comment.replied = reply_comment
-            send_new_reply_email(reply_comment)   # 发送邮件给被恢复的用户
+        
         return redirect(url_for('.show_post', post_id=post_id))
     return render_template('blog/post.html', post=post, pagination=pagination, comments=comments, form=form)
 

@@ -1,23 +1,18 @@
 from threading import Thread
 from flask import url_for, current_app
 from flask_mail import Message
-from bluelog.extensions import mail
+from bluelog.extensions import mail, celery
 
-def _send_async_mail(app, message):
-    with app.app_context():
-        mail.send(message)
-
-
+@celery.task
 def send_mail(subject, to, html):
     app = current_app._get_current_object()  # 获取被代理的真实对象
     message = Message(subject, recipients=[to], html=html)
-    thr = Thread(target=_send_async_mail, args=[app, message])
-    thr.start()
-    return thr
+    with app.app_context():
+        mail.send(message)
 
 def send_new_comment_email(post):
     post_url = url_for('blog.show_post', post_id=post.id, _external=True) + '#comments'
-    send_mail(
+    send_mail.delay(
         subject='New comment',
         to=current_app.config['BLUELOG_EMAIL'],
         html='''
@@ -29,7 +24,7 @@ def send_new_comment_email(post):
 
 def send_new_reply_email(comment):
     post_url = url_for('blog.show_post', post_id=comment.post_id, _external=True) + '#comments'
-    send_mail(
+    send_mail.delay(
         subject='New reply',
         to=comment.email,
         html='''
