@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
-from flask_login import current_user, login_required, login_user
+from flask_login import current_user, login_required, login_user, logout_user
 from albumy.forms.auth import RegisterForm, LoginForm, ForgetPasswordForm, ResetPasswordForm
 from albumy.models import User
 from albumy.extensions import db
@@ -46,6 +46,15 @@ def login():
         flash('无效的邮箱或密码', 'warning')
     return render_template('auth/login.html', form=form)
 
+
+@auth_bp.route('/logout')
+@login_required
+def logout():
+    logout_user()
+    flash('退出成功', 'info')
+    return redirect(url_for('main.index'))
+
+
 @auth_bp.route('/forget-password', methods=['GET', 'POST'])
 def forget_password():
     if current_user.is_authenticated:
@@ -75,7 +84,7 @@ def reset_password(token):
             flash('用户不存在！', 'warning')
             return redirect(url_for('main.index'))
         if validate_token(user=user, token=token, operation=Operations.RESET_PASSWORD,
-                            new_password=form.password.data):
+                            new_password=form.password.data):  # 传入新密码
             flash('重置密码成功。', 'success')
             return redirect(url_for('.login'))
             
