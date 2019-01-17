@@ -60,6 +60,8 @@ class DevelopmentConfig(BaseConfig):
     # SQLALCHEMY_DATABASE_URI = 'mysql+cymysql://username:password@localhost:3306/albumy'
     REDIS_URL = "redis://localhost"
     ALBUMY_UPLOAD_PATH = os.path.join(basedir, 'uploads')  # 生产环境可以使用单独的文件服务器或专业的存储服务，如 Amazon S3
+    AVATARS_SAVE_PATH = os.path.join(ALBUMY_UPLOAD_PATH, 'avatars')
+    AVATARS_SIZE_TUPLE = (30, 100, 200)  # 三种尺寸的头像
 
 
 class TestingConfig(BaseConfig):

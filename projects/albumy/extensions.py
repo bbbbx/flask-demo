@@ -5,6 +5,7 @@ from flask_moment import Moment
 from flask_bootstrap import Bootstrap
 from flask_wtf.csrf import CSRFProtect
 from flask_dropzone import Dropzone
+from flask_avatars import Avatars
 
 db = SQLAlchemy()
 mail = Mail()
@@ -13,6 +14,7 @@ bootstrap = Bootstrap()
 moment = Moment()
 csrf = CSRFProtect()
 dropzone = Dropzone()
+avatars = Avatars()
 
 @login_manager.user_loader
 def load_user(user_id):

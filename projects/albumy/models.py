@@ -1,5 +1,6 @@
 from datetime import datetime
 from flask_login import UserMixin
+from flask_avatars import Identicon
 from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
 from albumy.extensions import db
@@ -65,10 +66,15 @@ class User(db.Model, UserMixin):
 
     photos = db.relationship('Photo', back_populates='author', cascade='all')
 
+    avatar_s = db.Column(db.String(255))
+    avatar_m = db.Column(db.String(255))
+    avatar_l = db.Column(db.String(255))
+
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         # ...
         self.set_role()
+        self.generate_avatar()
 
     def set_role(self):
         if self.role is None:
@@ -77,6 +83,14 @@ class User(db.Model, UserMixin):
             else:
                 self.role = Role.query.filter_by(name='User').first()
             db.session.commit()
+    
+    def generate_avatar(self):
+        avatar = Identicon()
+        filenames = avatar.generate(text=self.username)
+        self.avatar_s = filenames[0]
+        self.avatar_m = filenames[0]
+        self.avatar_l = filenames[0]
+        db.session.commit()
 
     @property
     def is_admin(self):
