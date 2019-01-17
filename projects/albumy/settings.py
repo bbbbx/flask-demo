@@ -53,6 +53,7 @@ class DevelopmentConfig(BaseConfig):
     # 使用 MySQL，需要 `pipenv install cymysql`
     # SQLALCHEMY_DATABASE_URI = 'mysql+cymysql://username:password@localhost:3306/albumy'
     REDIS_URL = "redis://localhost"
+    ALBUMY_UPLOAD_PATH = os.path.join(basedir, 'uploads')  # 生产环境可以使用单独的文件服务器或专业的存储服务，如 Amazon S3
 
 
 class TestingConfig(BaseConfig):
