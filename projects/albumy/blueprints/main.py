@@ -1,4 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash
+from flask_login import login_required
 
 main_bp = Blueprint('main', __name__)
 
@@ -11,3 +12,7 @@ def index():
 def explore():
     return render_template('main/explore.html')
 
+@main_bp.route('/upload', methods=['GET', 'POST'])
+# @login_required
+def upload():
+    return render_template('main/upload.html')
