@@ -5,6 +5,7 @@ from flask_dropzone import random_filename
 from albumy.decorators import confirm_required, permission_required
 from albumy.models import Photo
 from albumy.extensions import db
+from albumy.utils import resize_image
 
 main_bp = Blueprint('main', __name__)
 
@@ -24,6 +25,7 @@ def explore():
 def upload():
     if request.method == 'POST' and 'file' in request.files:
         f = request.files.get('file')  # 获取文件对象
+
         # Dropzone.js 是通过 Ajax 发送请求的，
         # 每个文件一个请求。为此，无法返回重定向响应，
         # 使用 flash() 函数或是操作 session。
@@ -31,12 +33,16 @@ def upload():
         # if not check_image(f):
         #     return '无效的图片', 400
         # 客户端会把接收到的错误响应显示出来。
-        if f is None:
-            return '无效的图片', 400
+
         filename = random_filename(f.filename)  # 生成随机文件名
         f.save(os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)) # 保存文件
+        filename_s = resize_image(f, filename, 400)
+        filename_m = resize_image(f, filename, 800)
+
         photo = Photo(  # 创建图片记录
             filename=filename,
+            filename_s=filename_s,
+            filename_m=filename_m,
             author=current_user._get_current_object()  # 获取真实的用户对象，而不是代理的用户对象
         )
         db.session.add(photo)

@@ -41,6 +41,12 @@ class BaseConfig:
     DROPZONE_MAX_FILE_EXCEED = '超出上传文件数'
     DROPZONE_ENABLE_CSRF = True
 
+    ALBUMY_PHOTO_SIZE = { 'small': 400, 'medium': 800 }
+    ALBUMY_PHOTO_SUFFIX = {
+        ALBUMY_PHOTO_SIZE['small']: '_s',  # thumbnail
+        ALBUMY_PHOTO_SIZE['medium']: '_m',  # display
+    }
+
     MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = 25
     MAIL_USE_SSL = True

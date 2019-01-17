@@ -97,7 +97,9 @@ class User(db.Model, UserMixin):
 class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(500))
-    filename = db.Column(db.String(255))
+    filename = db.Column(db.String(255))    # 原始尺寸的文件名
+    filename_s = db.Column(db.String(255))  # 小型尺寸的文件名
+    filename_m = db.Column(db.String(255))  # 中型尺寸的文件名
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     author = db.relationship('User', back_populates='photos')

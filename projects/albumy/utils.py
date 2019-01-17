@@ -1,3 +1,5 @@
+import os
+from PIL import Image
 from flask import current_app
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import BadSignature, SignatureExpired
@@ -30,3 +32,23 @@ def validate_token(user, token, opration, new_password=None):
 
     db.session.commit()
     return True
+
+def resize_image(image, filename, base_width):
+    '''base_width: int。
+    可以是 400 或 800。
+    '''
+    filename, ext = os.path.splitext(filename)
+    img = Image.open(image)
+    if img.size[0] <= base_width:  # img.size：图片的宽高，例如 (205, 315)
+        return filename + ext
+    w_percent = (base_width / float(img.size[0]))
+    h_size = int(float(img.size[1]) * float(w_percent))
+    img = img.resize((base_width, h_size), PIL.Image.ANTIALIAS)  # ANTIALIAS 平滑化
+
+    filename += current_app.config['ALBUMY_PHOTO_SUFFIX'][base_width] + ext
+    img.save(
+        os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'] ,filename),
+        optimize=True,  # 图像是否压缩
+        quality=85      # 压缩图像质的质量
+    )
+    return filename
