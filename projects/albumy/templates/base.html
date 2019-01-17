@@ -55,14 +55,41 @@
                         </div>
                     </div>
                 {% else %}
-                    <a class="btn btn-outline-primary" href="{{ url_for('auth.login') }}">Login</a>&nbsp;&nbsp;
-                    <a class="btn btn-primary" href="{{ url_for('auth.register') }}">Join Albumy</a>
+                    <a class="btn btn-outline-primary" href="{{ url_for('auth.login') }}">登录</a>&nbsp;&nbsp;
+                    <a class="btn btn-primary" href="{{ url_for('auth.register') }}">加入 Albumy</a>
                 {% endif %}
                 </div>
             </div>
         </div>
     </nav>
 {% endblock %}
+
+<main>
+    <div class="container">
+        {% for message in get_flashed_messages(with_categories=True) %}
+            <div class="alert alert-{{ message[0] }}">
+                <button type="button" class="close" data-dismiss="alert">&times;</button>
+                {{ message[1] }}
+            </div>
+        {% endfor %}
+        {% block content %}{% endblock %}
+        {% block footer %}
+            <footer>
+                <p class="float-left">
+                    <small>&copy; 2018
+                        <a href="http://greyli.com" title="Written by Grey Li">Grey Li</a> -
+                        <a href="https://github.com/greyli/albumy" title="Fork me on GitHub">GitHub</a> -
+                        <a href="http://helloflask.com" title="A HelloFlask project">HelloFlask</a>
+                    </small>
+                </p>
+                <p class="float-right">
+                    <small>Capture and share every wonderful moment.</small>
+                </p>
+            </footer>
+        {% endblock %}
+    </div>
+</main>
+<div id="toast"></div>
     
 {% block scripts %}
     <script src="{{ url_for('static', filename='js/jquery-3.2.1.slim.min.js') }}"></script>

@@ -31,6 +31,16 @@ class BaseConfig:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 
+    DROPZONE_MAX_FILE_SIZE = 3
+    DROPZONE_MAX_FILES = 30
+    DROPZONE_ALLOWED_FILE_TYPE = 'image'
+    DROPZONE_INVALID_FILE_TYPE = '你不能上传该类型的文件'
+    DROPZONE_FILE_TOO_BIG = '文件太大了 {{ filesize }}，文件最大大小为 {{ maxFilesize }} MB。'
+    DROPZONE_SERVER_ERROR = '服务器错误：{{ statusCode }}'
+    DROPZONE_BROWSER_UNSUPPORTED = '你的浏览器不支持拖拽上传文件'
+    DROPZONE_MAX_FILE_EXCEED = '超出上传文件数'
+    DROPZONE_ENABLE_CSRF = True
+
     MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = 25
     MAIL_USE_SSL = True
