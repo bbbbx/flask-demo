@@ -49,6 +49,7 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
         >>> img.save(the_desctination_path)  # 或是调用 img.show() 直接显示图片
         ```
 - 开源的图标集：[Font Awesome](https://fontawesome.com/)、[Material Design Icons](https://material.io/icons)、[Octicons](https://octicons.github.com/)、和 Bootstrap 集成良好的 [Iconic](https://useiconic.com/open)
+- 查看 SQLite 的 ER 图：[Alexis-benoist/eralchemy](https://github.com/Alexis-benoist/eralchemy)
 
 ## 原型设计工具
 

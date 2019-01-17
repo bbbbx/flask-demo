@@ -40,13 +40,15 @@ class BaseConfig:
 
 class DevelopmentConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = prefix + os.path.join(basedir, 'data-dev.db')
+    # 使用 MySQL，需要 `pipenv install cymysql`
+    # SQLALCHEMY_DATABASE_URI = 'mysql+cymysql://username:password@localhost:3306/albumy'
     REDIS_URL = "redis://localhost"
 
 
 class TestingConfig(BaseConfig):
     TESTING = True
     WTF_CSRF_ENABLED = False
-    SQLALCHEMY_DATABASE_URI = 'sqlite:///'  # in-memory database
+    SQLALCHEMY_DATABASE_URI = prefix + ':memory:'
 
 
 class ProductionConfig(BaseConfig):

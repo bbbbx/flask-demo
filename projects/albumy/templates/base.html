@@ -7,6 +7,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="favicon" href="{{ url_for('static', filename='favicon.ico') }}" >
     <title>{% block title %}{% endblock %} - Albumy</title>
     {% block style %}
         <link rel="stylesheet" href="{{ url_for('static', filename='css/bootstrap.min.css') }}">
@@ -32,8 +33,7 @@
                     {{ render_nav_item('main.index', '首页') }}
                     {{ render_nav_item('main.explore', '探索') }}
                     <form class="form-inline my-2 my-lg-0">
-                        <input type="text" name="q" class="form-control mr-sm-1" placeholder="Photo, tag or user"
-                                required>
+                        <input type="text" name="q" class="form-control mr-sm-1" placeholder="Photo, tag or user" required>
                         <button class="btn btn-light my-2 my-sm-0" type="submit">
                             <span class="oi oi-magnifying-glass"></span>
                         </button>

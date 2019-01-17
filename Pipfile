@@ -26,6 +26,8 @@ raven = "*"
 flask-restful = "*"
 pillow = "*"
 flask-dropzone = "*"
+eralchemy = "*"
+cymysql = "*"
 
 [requires]
 python_version = "3.7"
