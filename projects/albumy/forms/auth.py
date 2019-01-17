@@ -9,7 +9,7 @@ class RegisterForm(FlaskForm):
     username = StringField('用户名', validators=[DataRequired(), Length(1, 20), Regexp('^[a-zA-Z0-9]*$', message='用户名必须只包含英文字母或数字')])
     password = PasswordField('密码', validators=[DataRequired(), Length(8, 128)])
     password_confirm = PasswordField('确认密码', validators=[DataRequired(), Length(8, 128), EqualTo('password')])
-    submit = SubmitField()
+    submit = SubmitField('注册')
 
     def validate_email(self, field):
         if User.query.filter_by(email=field.data).first():
@@ -22,15 +22,15 @@ class RegisterForm(FlaskForm):
 class LoginForm(FlaskForm):
     email = StringField('邮箱', validators=[DataRequired(), Length(1, 254), Email])
     password = PasswordField('密码', validators=[DataRequired()])
-    remeber_me = BooleanField('记住我？')
-    submit = SubmitField()
+    remember_me = BooleanField('记住我？')
+    submit = SubmitField('登录')
 
 class ForgetPasswordForm(FlaskForm):
     email = StringField('邮箱', validators=[DataRequired(), Length(1, 254), Email()])
-    submit = SubmitField()
+    submit = SubmitField('发送验证邮件')
 
 class ResetPasswordForm(FlaskForm):
     email = StringField('邮箱', validators=[DataRequired, Length(1, 254), Email()])
     password = PasswordField('密码', validators=[DataRequired(), Length(8, 128)])
     password_confirm = PasswordField('确认密码', validators=[DataRequired(), Length(8, 128), EqualTo('password')])
-    submit = SubmitField()
+    submit = SubmitField('重置密码')

@@ -12,7 +12,7 @@ def fake_admin():
                  bio=fake.sentence(),
                  website='http://venusworld.cn',
                  confirmed=True)
-    admin.set_password('123123')
+    admin.set_password('aa123123')
     db.session.add(admin)
     db.session.commit()
 
@@ -27,7 +27,7 @@ def fake_user(count=10):
                     website=fake.url(),
                     member_since=fake.date_this_decade(),
                     email=fake.email())
-        user.set_password('123456')
+        user.set_password('aa123123')
         db.session.add(user)
         try:
             db.session.commit()

@@ -21,7 +21,7 @@ def explore():
 @main_bp.route('/upload', methods=['GET', 'POST'])
 @login_required    # 验证登录状态
 @confirm_required  # 验证确认邮箱状态
-@permission_required('UOLOAD')  # 验证权限
+@permission_required('UPLOAD')  # 验证权限
 def upload():
     if request.method == 'POST' and 'file' in request.files:
         f = request.files.get('file')  # 获取文件对象

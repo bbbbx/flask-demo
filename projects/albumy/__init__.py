@@ -50,14 +50,16 @@ def register_extensions(app):
     login_manager.init_app(app)
     mail.init_app(app)
     moment.init_app(app)
-    csrf.init_app(app)
     dropzone.init_app(app)
+    csrf.init_app(app)
 
 
 def register_blueprints(app):
     app.register_blueprint(main.main_bp)
     app.register_blueprint(auth.auth_bp, url_prefix='/auth')
     app.register_blueprint(admin.admin_bp, url_prefix='/admin')
+    app.register_blueprint(user.user_bp, url_prefix='/user')
+    app.register_blueprint(ajax.ajax_bp, url_prefix='/ajax')
 
 
 def register_shell_context(app):
