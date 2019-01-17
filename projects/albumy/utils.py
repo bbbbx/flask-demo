@@ -3,6 +3,7 @@ try:
 except ImportError:
     from urllib.parse import urlparse, urljoin
 import os
+import PIL
 from PIL import Image
 from flask import current_app, request, redirect, url_for
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
@@ -63,6 +64,8 @@ def resize_image(image, filename, base_width):
         return filename + ext
     w_percent = (base_width / float(img.size[0]))
     h_size = int(float(img.size[1]) * float(w_percent))
+
+    # see https://pillow.readthedocs.io/en/3.1.x/reference/Image.html#PIL.Image.Image.resize
     img = img.resize((base_width, h_size), PIL.Image.ANTIALIAS)  # ANTIALIAS 平滑化
 
     filename += current_app.config['ALBUMY_PHOTO_SUFFIX'][base_width] + ext
