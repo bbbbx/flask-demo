@@ -56,3 +56,8 @@ def get_avatar(filename):
 @main_bp.route('/uploads/<path:filename>')
 def get_image(filename):
     return send_from_directory(current_app.config['ALBUMY_UPLOAD_PATH'], filename)
+
+@main_bp.route('/photo/<photo_id>')
+def show_photo(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    return render_template('main/photo.html', photo=photo)
