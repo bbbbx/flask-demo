@@ -1,3 +1,4 @@
+import os
 from datetime import datetime
 from flask_login import UserMixin
 from flask_avatars import Identicon
@@ -117,3 +118,16 @@ class Photo(db.Model):
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     author = db.relationship('User', back_populates='photos')
+
+@db.event.listens_for(Photo, 'after_delete', named=True)
+def delete_photos(**kwargs):
+    ''''监听 Photo 记录删除后，自动删除对应文件。
+    SQLAlchemy 文档：https://docs.sqlalchemy.org/en/latest/core/event.html#sqlalchemy.event.listens_for
+    '''
+    target = kwargs['target']
+    for filename in [target.filename, target.filename_s, target.filename_m]:
+        if filename is not None:
+            path = os.path.join(current_app.config['ALBUMY_UPLOAD_PATH'], filename)
+            if os.path.exists(path):
+                os.remove(path)
+
