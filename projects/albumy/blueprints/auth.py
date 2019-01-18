@@ -40,7 +40,7 @@ def login():
         user = User.query.filter_by(email=form.email.data.lower()).first()
         if user is not None and user.validate_password(form.password.data):
             if login_user(user, form.remember_me.data):
-                flash('登录成功。', 'info')
+                flash('登录成功。', 'success')
                 return redirect_back()
             else:
                 flash('你的账号被封了。', 'warning')
