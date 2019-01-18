@@ -61,3 +61,23 @@ def get_image(filename):
 def show_photo(photo_id):
     photo = Photo.query.get_or_404(photo_id)
     return render_template('main/photo.html', photo=photo)
+
+@main_bp.route('/photo/n/<int:photo_id>')
+def photo_next(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    photo_n = Photo.query.with_parent(photo.author).filter(Photo.id < photo_id).order_by(Photo.timestamp.desc()).first()
+
+    if photo_n is None:
+        flash('已经是最近的一张照片了。', 'info')
+        return redirect(url_for('.show_photo', photo_id=photo_id))
+    return redirect(url_for('.show_photo', photo_id=photo_n.id))    # 注意这里和上一行是不一样的
+
+@main_bp.route('/photo/p/<int:photo_id>')
+def photo_previous(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    photo_p = Photo.query.with_parent(photo.author).filter(Photo.id > photo_id).order_by(Photo.timestamp.asc()).first()
+
+    if photo_p is None:
+        flash('已经是最近的一张照片了。', 'info')
+        return redirect(url_for('.show_photo', photo_id=photo_id))
+    return redirect(url_for('.show_photo', photo_id=photo_p.id))    # 注意这里和上一行是不一样的
