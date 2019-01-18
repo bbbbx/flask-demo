@@ -68,7 +68,7 @@ def photo_next(photo_id):
     photo_n = Photo.query.with_parent(photo.author).filter(Photo.id < photo_id).order_by(Photo.timestamp.desc()).first()
 
     if photo_n is None:
-        flash('已经是最近的一张照片了。', 'info')
+        flash('已经是最后的一张照片了。', 'info')
         return redirect(url_for('.show_photo', photo_id=photo_id))
     return redirect(url_for('.show_photo', photo_id=photo_n.id))    # 注意这里和上一行是不一样的
 
@@ -78,6 +78,26 @@ def photo_previous(photo_id):
     photo_p = Photo.query.with_parent(photo.author).filter(Photo.id > photo_id).order_by(Photo.timestamp.asc()).first()
 
     if photo_p is None:
-        flash('已经是最近的一张照片了。', 'info')
+        flash('已经是最后的一张照片了。', 'info')
         return redirect(url_for('.show_photo', photo_id=photo_id))
     return redirect(url_for('.show_photo', photo_id=photo_p.id))    # 注意这里和上一行是不一样的
+
+@main_bp.route('/photo/<int:photo_id>/delete', methods=['POST'])
+@confirm_required
+@login_required
+def delete_photo(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user != photo.author:
+        abort(403)
+
+    db.session.delete(photo)
+    db.session.commit()
+    flash('删除成功', 'info')
+
+    photo_n = Photo.query.with_parent(photo.author).filter(Photo.id < photo_id).order_by(Photo.id.desc()).first()
+    if photo_n is None:  # 没有下一张照片时获取上一张
+        photo_p = Photo.query.with_parent(photo.author).filter(Photo.id > photo_id).order_by(Photo.id.asc()).first()
+        if photo_p is None:  # 上一张也没有时则返回主页
+            return redirect(url_for('main.index', username=photo.author.username))
+        return redirect(url_for('.show_photo', photo_id=photo_p.id))
+    return redirect(url_for('.show_photo', photo_id=photo_n.id))
