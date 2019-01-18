@@ -101,3 +101,13 @@ def delete_photo(photo_id):
             return redirect(url_for('main.index', username=photo.author.username))
         return redirect(url_for('.show_photo', photo_id=photo_p.id))
     return redirect(url_for('.show_photo', photo_id=photo_n.id))
+
+@main_bp.route('/photo/<int:photo_id>/report', methods=['POST'])
+@confirm_required
+@login_required
+def report_photo(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    photo.flag += 1
+    db.session.commit()
+    flash('举报成功', 'success')
+    return redirect(url_for('.show_photo', photo_id=photo_id))

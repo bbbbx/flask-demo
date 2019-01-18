@@ -119,6 +119,8 @@ class Photo(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     author = db.relationship('User', back_populates='photos')
 
+    flag = db.Column(db.Integer, default=0)  # 图片被举报次数
+
 @db.event.listens_for(Photo, 'after_delete', named=True)
 def delete_photos(**kwargs):
     ''''监听 Photo 记录删除后，自动删除对应文件。
