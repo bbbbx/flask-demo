@@ -205,25 +205,66 @@ def report_photo(photo_id):
 @main_bp.route('/comment/<int:photo_id>/set')
 @login_required
 def set_comment(photo_id):
-    pass
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user != photo.author:
+        abort(403)
+    if photo.can_comment:
+        photo.can_comment = False
+        flash('评论已关闭。', 'success')
+    else:
+        photo.can_comment = True
+        flash('评论已开启。', 'success')
+    db.session.commit()
+    return redirect(url_for('.show_photo', photo_id=photo.id))
 
 @main_bp.route('/comment/<int:comment_id>/reply')
 @login_required
+@permission_required('COMMENT')
 def reply_comment(comment_id):
-    pass
+    comment = Comment.query.get_or_404(comment_id)
+    return redirect(url_for('.show_photo', photo_id=comment.photo_id, reply=comment.id,
+                            author=comment.author.name) + '#comment-form')
 
 @main_bp.route('/comment/<int:comment_id>/report', methods=['POST'])
 @login_required
+@confirm_required
 def report_comment(comment_id):
-    pass
+    comment = Comment.query.get_or_404(comment_id)
+    comment.flag += 1
+    db.session.commit()
+    flash('举报成功。', 'success')
+    return redirect(url_for('.show_photo', photo_id=comment.photo_id))
 
 
 @main_bp.route('/comment/<int:comment_id>/delete', methods=['POST'])
 @login_required
 def delete_comment(comment_id):
-    pass
+    comment = Comment.query.get_or_404(comment_id)
+    if current_user != comment.author and current_user != comment.photo.author:
+        abort(403)
+    db.session.delete(comment)
+    db.session.commit()
+    flash('删除成功。', 'success')
+    return redirect(url_for('.show_photo', photo_id=comment.photo_id))
 
 @main_bp.route('/comment/<int:photo_id>/new', methods=['POST'])
 @login_required
+@permission_required('COMMENT')
 def new_comment(photo_id):
-    pass
+    photo = Photo.query.get_or_404(photo_id)
+    page = request.args.get('page', 1, type=int)
+    form = CommentForm()
+    if form.validate_on_submit():
+        body = form.body.data
+        author = current_user._get_current_object()
+        comment = Comment(body=body, author=author, photo=photo)
+
+        replied_id = request.args.get('reply')
+        if replied_id:
+            comment.replied = Comment.query.get_or_404(replied_id)
+        db.session.add(comment)
+        db.session.commit()
+        flash('评论成功。', 'success')
+
+    flash_errors(form)
+    return redirect(url_for('.show_photo', photo_id=photo.id, page=page))

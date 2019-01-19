@@ -146,10 +146,10 @@ class Comment(db.Model):
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
     photo_id = db.Column(db.Integer, db.ForeignKey('photo.id'))
 
+    photo = db.relationship('Photo', back_populates='comments')
+    author = db.relationship('User', back_populates='comments')
     replies = db.relationship('Comment', back_populates='replied', cascade='all')
     replied = db.relationship('Comment', back_populates='replies', remote_side=[id])
-    author = db.relationship('User', back_populates='comments')
-    photo = db.relationship('Photo', back_populates='comments')
 
 
 @db.event.listens_for(Photo, 'after_delete', named=True)

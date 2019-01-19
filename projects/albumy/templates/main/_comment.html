@@ -95,7 +95,7 @@
                 {% if request.args.get('reply') %}
                     <div class="alert alert-dark">
                         回复 {{ request.args.get('author') }}:
-                        <a class="float-right" href="{{ url_for('.show_photo', photo_id=photo.id) }}">Cancel</a>
+                        <a class="float-right" href="{{ url_for('.show_photo', photo_id=photo.id) }}">取消</a>
                     </div>
                 {% endif %}
                 <div class="comment-form-area">
@@ -115,9 +115,9 @@
             {% endif %}
         {% else %}
             <p class="tip">
-                <a href="{{ url_for('auth.login') }}">登录</a>
+                <a href="{{ url_for('auth.login', next=request.full_path) }}">登录</a>
                 或
-                <a href="{{ url_for('auth.register') }}">注册</a> 后发表评论。
+                <a href="{{ url_for('auth.register', next=request.full_path) }}">注册</a> 后发表评论。
             </p>
         {% endif %}
     {% else %}
