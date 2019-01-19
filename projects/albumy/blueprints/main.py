@@ -17,7 +17,11 @@ def index():
 
 @main_bp.route('/explore')
 def explore():
-    return render_template('main/explore.html')
+    page = request.args.get('page', 1, type=int)
+    per_page = current_app.config['ALBUMY_PHOTO_PER_PAGE']
+    pagination = Photo.query.order_by(Photo.timestamp.desc()).paginate(page, per_page)
+    photos = pagination.items
+    return render_template('main/explore.html', photos=photos, pagination=pagination)
 
 @main_bp.route('/upload', methods=['GET', 'POST'])
 @login_required    # 验证登录状态
@@ -64,7 +68,7 @@ def show_photo(photo_id):
 
     page = request.args.get('page', 1, type=int)
     per_page = current_app.config['ALBUMY_COMMENT_PER_PAGE']
-    pagination = Comment.query.with_parent(photo).order_by(Comment.timestamp.asc()).paginate(page, per_page)
+    pagination = Comment.query.with_parent(photo).order_by(Comment.timestamp.desc()).paginate(page, per_page)
     comments = pagination.items
 
     description_form = DescriptionForm()

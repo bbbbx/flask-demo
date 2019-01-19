@@ -36,7 +36,6 @@ def login():
     form = LoginForm()
     # if form.validate_on_submit():
     if request.method == 'POST':
-        print('\n1\n')
         user = User.query.filter_by(email=form.email.data.lower()).first()
         if user is not None and user.validate_password(form.password.data):
             if login_user(user, form.remember_me.data):

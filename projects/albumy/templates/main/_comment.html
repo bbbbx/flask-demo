@@ -1,7 +1,7 @@
 <div class="comments" id="comments">
     <h3>{{ photo.comments | length }} 条评论
         <small>
-            <a href="{{ url_for('.show_photo', photo_id=photo.id, page=pagination.pages or 1) }}#comment-form">最近的评论</a>
+            <a href="{{ url_for('.show_photo', photo_id=photo.id) }}#comments">最近的评论</a>
         </small>
         {% if current_user == photo.author %}
             <a href="{{ url_for('.set_comment', photo_id=photo.id) }}" class="btn btn-xs btn-link float-right">
