@@ -126,9 +126,21 @@ def delete_tag(photo_id, tag_id):
     flash('删除成功。', 'success')
     return redirect(url_for('.show_photo', photo_id=photo_id))
 
-@main_bp.route('/tag/<int:tag_id>')
-def show_tag(tag_id):
-    return ''
+@main_bp.route('/tag/<int:tag_id>', defaults={ 'order': 'by_time' })
+@main_bp.route('/tag/<int:tag_id>/<order>')
+def show_tag(tag_id, order):
+    '''这个视图函数注册了两个路由，第一个用来决定排序方式的 order 变量设默认值。'''
+    tag = Tag.query.get_or_404(tag_id)
+    page = request.args.get('page', 1, type=int)
+    per_page = current_app.config['ALBUMY_PHOTO_PER_PAGE']
+    order_rule = '时间'
+    pagination = Photo.query.with_parent(tag).order_by(Photo.timestamp.desc()).paginate(page, per_page)
+    photos = pagination.items
+
+    # if order == 'by_collects':
+    #     photos.sort(key=lambda photo: len(photo.collectors), reverse=True)
+    #     order_rule = '收藏数'
+    return render_template('main/tag.html', tag=tag, pagination=pagination, photos=photos, order_rule=order_rule)
 
 
 @main_bp.route('/photo/n/<int:photo_id>')
