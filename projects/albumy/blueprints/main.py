@@ -3,10 +3,10 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from flask_dropzone import random_filename
 from albumy.decorators import confirm_required, permission_required
-from albumy.models import Photo, Tag
+from albumy.models import Photo, Tag, Comment
 from albumy.extensions import db
 from albumy.utils import resize_image, flash_errors
-from albumy.forms.main import DescriptionForm, TagForm
+from albumy.forms.main import DescriptionForm, TagForm, CommentForm
 
 main_bp = Blueprint('main', __name__)
 
@@ -61,11 +61,20 @@ def get_image(filename):
 @main_bp.route('/photo/<photo_id>')
 def show_photo(photo_id):
     photo = Photo.query.get_or_404(photo_id)
+
+    page = request.args.get('page', 1, type=int)
+    per_page = current_app.config['ALBUMY_COMMENT_PER_PAGE']
+    pagination = Comment.query.with_parent(photo).order_by(Comment.timestamp.asc()).paginate(page, per_page)
+    comments = pagination.items
+
     description_form = DescriptionForm()
-    description_form.description.data = photo.description
     tag_form = TagForm()
-    
-    return render_template('main/photo.html', photo=photo, description_form=description_form, tag_form=tag_form)
+    comment_form = CommentForm()
+
+    description_form.description.data = photo.description
+    return render_template('main/photo.html', photo=photo, description_form=description_form,
+                            tag_form=tag_form, pagination=pagination, comments=comments,
+                            comment_form=comment_form)
 
 @main_bp.route('/photo/<int:photo_id>/description', methods=['POST'])
 @confirm_required
@@ -192,3 +201,29 @@ def report_photo(photo_id):
     db.session.commit()
     flash('举报成功', 'success')
     return redirect(url_for('.show_photo', photo_id=photo_id))
+
+@main_bp.route('/comment/<int:photo_id>/set')
+@login_required
+def set_comment(photo_id):
+    pass
+
+@main_bp.route('/comment/<int:comment_id>/reply')
+@login_required
+def reply_comment(comment_id):
+    pass
+
+@main_bp.route('/comment/<int:comment_id>/report', methods=['POST'])
+@login_required
+def report_comment(comment_id):
+    pass
+
+
+@main_bp.route('/comment/<int:comment_id>/delete', methods=['POST'])
+@login_required
+def delete_comment(comment_id):
+    pass
+
+@main_bp.route('/comment/<int:photo_id>/new', methods=['POST'])
+@login_required
+def new_comment(photo_id):
+    pass
