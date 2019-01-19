@@ -64,7 +64,7 @@ class User(db.Model, UserMixin):
 
     role_id = db.Column(db.Integer, db.ForeignKey('role.id'))
     role = db.relationship('Role', back_populates='users')
-
+    comments = db.relationship('Comment', back_populates='author', cascade='all')
     photos = db.relationship('Photo', back_populates='author', cascade='all')
 
     avatar_s = db.Column(db.String(255))
@@ -122,17 +122,34 @@ class Photo(db.Model):
     filename_m = db.Column(db.String(255))  # 中型尺寸的文件名
     timestamp = db.Column(db.DateTime, default=datetime.utcnow)
     author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
-    author = db.relationship('User', back_populates='photos')
-
+    can_comment = db.Column(db.Boolean, default=True)
     flag = db.Column(db.Integer, default=0)  # 图片被举报次数
 
+    author = db.relationship('User', back_populates='photos')
     tags = db.relationship('Tag', secondary=tagging, back_populates='photos')
+    comments = db.relationship('Comment', back_populates='photo', cascade='all')
+
 
 class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(30), index=True)
 
     photos = db.relationship('Photo', secondary=tagging, back_populates='tags')
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    body = db.Column(db.Text)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow, index=True)
+    flag = db.Column(db.Integer, default=0)
+
+    replied_id = db.Column(db.Integer, db.ForeignKey('comment.id'))
+    author_id = db.Column(db.Integer, db.ForeignKey('user.id'))
+    photo_id = db.Column(db.Integer, db.ForeignKey('photo.id'))
+
+    replies = db.relationship('Comment', back_populates='replied', cascade='all')
+    replied = db.relationship('Comment', back_populates='replies', remote_side=[id])
+    author = db.relationship('User', back_populates='comments')
+    photo = db.relationship('Photo', back_populates='comments')
 
 
 @db.event.listens_for(Photo, 'after_delete', named=True)

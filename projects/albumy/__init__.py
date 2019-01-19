@@ -27,10 +27,13 @@ def register_commands(app):
 
     @app.cli.command()
     @click.option('--user', default=10, help='Quantity of users, default is 10.')
-    def forge(user):
+    @click.option('--photo', default=30, help='Quantity of photos, default is 500.')
+    @click.option('--tag', default=20, help='Quantity of tags, default is 500.')
+    @click.option('--comment', default=100, help='Quantity of comments, default is 100.')
+    def forge(user, photo, tag, comment):
         """Generate fake data."""
 
-        from albumy.fakes import fake_admin, fake_user
+        from albumy.fakes import fake_admin, fake_user, fake_tag, fake_photo, fake_comment
 
         db.drop_all()
         db.create_all()
@@ -41,6 +44,12 @@ def register_commands(app):
         fake_admin()
         click.echo('Generating %d users...' % user)
         fake_user(user)
+        click.echo('Generating %d tags...' % tag)
+        fake_tag(tag)
+        click.echo('Generating %d photos...' % photo)
+        fake_photo(photo)
+        click.echo('Generating %d comments...' % comment)
+        fake_comment(comment)
         click.echo('Done.')
 
 
