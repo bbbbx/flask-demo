@@ -1,11 +1,12 @@
 import os
-from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_from_directory
+from flask import Blueprint, render_template, redirect, url_for, flash, request, current_app, send_from_directory, abort
 from flask_login import login_required, current_user
 from flask_dropzone import random_filename
 from albumy.decorators import confirm_required, permission_required
 from albumy.models import Photo
 from albumy.extensions import db
-from albumy.utils import resize_image
+from albumy.utils import resize_image, flash_errors
+from albumy.forms.main import DescriptionForm
 
 main_bp = Blueprint('main', __name__)
 
@@ -60,7 +61,27 @@ def get_image(filename):
 @main_bp.route('/photo/<photo_id>')
 def show_photo(photo_id):
     photo = Photo.query.get_or_404(photo_id)
-    return render_template('main/photo.html', photo=photo)
+    description_form = DescriptionForm()
+    description_form.description.data = photo.description
+    return render_template('main/photo.html', photo=photo, description_form=description_form)
+
+@main_bp.route('/photo/<int:photo_id>/description', methods=['POST'])
+@confirm_required
+@login_required
+def edit_description(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user != photo.author:
+        abort(403)
+    
+    form = DescriptionForm()
+    if form.validate_on_submit():
+        photo.description = form.description.data
+        db.session.commit()
+        flash('修改成功。', 'success')
+    
+    flash_errors(form)
+    return redirect(url_for('.show_photo', photo_id=photo_id))
+    
 
 @main_bp.route('/photo/n/<int:photo_id>')
 def photo_next(photo_id):

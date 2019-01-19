@@ -1,3 +1,5 @@
+{% from 'bootstrap/form.html' import render_field %}
+
 <nav aria-label="Page navigation">
     <ul class="pagination">
         <li class="page-item">
@@ -8,3 +10,28 @@
         </li>
     </ul>
 </nav>
+
+<div id="description">
+    <p>
+        {% if photo.description %}
+            {{ photo.description }}
+        {% endif %}
+        {% if current_user == photo.author %}
+            <a href="#!" id="description-btn">
+                <small>
+                    <span class="oi oi-pencil"></span>编辑
+                </small>
+            </a>
+        {% endif %}
+    </p>
+</div>
+{% if current_user == photo.author %}
+<div id="description-form">
+    <form action="{{ url_for('.edit_description', photo_id=photo.id) }}" method="post">
+        {{ description_form.csrf_token }}
+        {{ render_field(description_form.description) }}
+        <a class="btn btn-light btn-sm" id="cancel-description">取消</a>
+        {{ render_field(description_form.submit, class='btn btn-success btn-sm') }}
+    </form>
+</div>
+{% endif %}

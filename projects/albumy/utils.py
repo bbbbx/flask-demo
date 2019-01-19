@@ -5,7 +5,7 @@ except ImportError:
 import os
 import PIL
 from PIL import Image
-from flask import current_app, request, redirect, url_for
+from flask import current_app, request, redirect, url_for, flash
 from itsdangerous import TimedJSONWebSignatureSerializer as Serializer
 from itsdangerous import BadSignature, SignatureExpired
 from albumy.extensions import db
@@ -75,3 +75,11 @@ def resize_image(image, filename, base_width):
         quality=85      # 压缩图像质的质量
     )
     return filename
+
+def flash_errors(form):
+    for field, errors in form.errors.items():
+        for error in errors:
+            flash(u"%s 字段有错 - %s" % (
+                getattr(form, field).label.text,
+                error
+            ), 'danger')
