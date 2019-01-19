@@ -3,10 +3,10 @@ from flask import Blueprint, render_template, redirect, url_for, flash, request,
 from flask_login import login_required, current_user
 from flask_dropzone import random_filename
 from albumy.decorators import confirm_required, permission_required
-from albumy.models import Photo
+from albumy.models import Photo, Tag
 from albumy.extensions import db
 from albumy.utils import resize_image, flash_errors
-from albumy.forms.main import DescriptionForm
+from albumy.forms.main import DescriptionForm, TagForm
 
 main_bp = Blueprint('main', __name__)
 
@@ -63,7 +63,9 @@ def show_photo(photo_id):
     photo = Photo.query.get_or_404(photo_id)
     description_form = DescriptionForm()
     description_form.description.data = photo.description
-    return render_template('main/photo.html', photo=photo, description_form=description_form)
+    tag_form = TagForm()
+    
+    return render_template('main/photo.html', photo=photo, description_form=description_form, tag_form=tag_form)
 
 @main_bp.route('/photo/<int:photo_id>/description', methods=['POST'])
 @confirm_required
@@ -81,7 +83,53 @@ def edit_description(photo_id):
     
     flash_errors(form)
     return redirect(url_for('.show_photo', photo_id=photo_id))
+
+
+@main_bp.route('/photo/<int:photo_id>/tag/new', methods=['POST'])
+@confirm_required
+@login_required
+def new_tag(photo_id):
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user != photo.author:
+        abort(403)
     
+    form = TagForm()
+    if form.validate_on_submit():
+        for name in form.tag.data.split():
+            tag = Tag.query.filter_by(name=name).first()
+            if tag is None:  # 如果没有该标签则新建一个
+                tag = Tag(name=name)
+                db.session.add(tag)
+                db.session.commit()
+            if tag not in photo.tags:  # 如果还没有建立联系，则新建联系
+                photo.tags.append(tag)
+                db.session.commit()
+        flash('添加标签成功。', 'success')
+    
+    flash_errors(form)
+    return redirect(url_for('.show_photo', photo_id=photo_id))
+
+@main_bp.route('/photo/<int:photo_id>/tag/<int:tag_id>', methods=['POST'])
+@login_required
+def delete_tag(photo_id, tag_id):
+    tag = Tag.query.get_or_404(tag_id)
+    photo = Photo.query.get_or_404(photo_id)
+    if current_user != photo.author:
+        abort(403)
+    photo.tags.remove(tag)
+    db.session.commit()
+
+    if not tag.photos:  # 如果已经没有图片与该标签有联系，则删除该标签
+        db.session.delete(tag)
+        db.session.commit()
+    
+    flash('删除成功。', 'success')
+    return redirect(url_for('.show_photo', photo_id=photo_id))
+
+@main_bp.route('/tag/<int:tag_id>')
+def show_tag(tag_id):
+    return ''
+
 
 @main_bp.route('/photo/n/<int:photo_id>')
 def photo_next(photo_id):

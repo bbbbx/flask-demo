@@ -108,6 +108,11 @@ class User(db.Model, UserMixin):
     def validate_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+# 标签与图片的多对多关系使用关联表 tagging 存储
+tagging = db.Table('tagging',
+    db.Column('photo_id', db.Integer, db.ForeignKey('photo.id')),
+    db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
+)
 
 class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -120,6 +125,15 @@ class Photo(db.Model):
     author = db.relationship('User', back_populates='photos')
 
     flag = db.Column(db.Integer, default=0)  # 图片被举报次数
+
+    tags = db.relationship('Tag', secondary=tagging, back_populates='photos')
+
+class Tag(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(30), index=True)
+
+    photos = db.relationship('Photo', secondary=tagging, back_populates='tags')
+
 
 @db.event.listens_for(Photo, 'after_delete', named=True)
 def delete_photos(**kwargs):
