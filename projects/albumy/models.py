@@ -71,6 +71,8 @@ class User(db.Model, UserMixin):
     avatar_m = db.Column(db.String(255))
     avatar_l = db.Column(db.String(255))
 
+    collections = db.relationship('Collect', back_populates='collector', cascade='all')
+
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         # ...
@@ -128,6 +130,20 @@ class Photo(db.Model):
     author = db.relationship('User', back_populates='photos')
     tags = db.relationship('Tag', secondary=tagging, back_populates='photos')
     comments = db.relationship('Comment', back_populates='photo', cascade='all')
+
+    collectors = db.relationship('Collect', back_populates='collected', cascade='all')
+
+
+class Collect(db.Model):
+    '''关联表只能用来表示关系，不能用来存储数据，例如 tagging。
+    使用关联模型建立多对多关系可以用来存储数据。
+    '''
+    collector_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    collected_id = db.Column(db.Integer, db.ForeignKey('photo.id'), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)  # 收藏的时间
+
+    collector = db.relationship('User', back_populates='collections', lazy='joined')
+    collected = db.relationship('Photo', back_populates='collectors', lazy='joined')
 
 
 class Tag(db.Model):
