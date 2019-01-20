@@ -110,6 +110,24 @@ class User(db.Model, UserMixin):
     def validate_password(self, password):
         return check_password_hash(self.password_hash, password)
 
+    def is_collecting(self, photo):
+        # return self.collected.filter_by(collected_id=photo.id).first() is not None  # 错误的逻辑，User 没有 collected 属性
+        return Collect.query.with_parent(self).filter_by(collector_id=self.id, collected_id=photo.id).first() is not None
+
+    def collect(self, photo):
+        if not self.is_collecting(photo):
+            collect = Collect(collector=self, collected=photo)
+            db.session.add(collect)
+            db.session.commit()
+
+    def uncollect(self, photo):
+        # collect = self.collected.filter_by(collected_id=photo.id).first()  # 错误的逻辑
+        collect = Collect.query.with_parent(self).filter_by(collector_id=self.id, collected_id=photo.id).first()
+        if collect:
+            db.session.delete(collect)
+            db.session.commit()
+
+
 # 标签与图片的多对多关系使用关联表 tagging 存储
 tagging = db.Table('tagging',
     db.Column('photo_id', db.Integer, db.ForeignKey('photo.id')),
