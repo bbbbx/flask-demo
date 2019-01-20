@@ -309,12 +309,3 @@ def show_collectors(photo_id):
     pagination = Collect.query.with_parent(photo).order_by(Collect.timestamp.desc()).paginate(page, per_page)
     collects = pagination.items
     return render_template('main/collectors.html', collects=collects, photo=photo, pagination=pagination)
-
-@main_bp.route('/<username>/collections')
-def show_collections(username):
-    user = User.query.filter_by(username=username).first_or_404()
-    page = request.args.get('page', 1, type=int)
-    per_page = current_app.config['ALBUMY_COMMENT_PER_PAGE']
-    pagination = Collect.query.with_parent(user).order_by(Collect.timestamp.desc()).paginate(page, per_page)
-    collects = pagination.items
-    return render_template('user/collections.html', user=user, pagination=pagination, collects=collects)
