@@ -105,6 +105,10 @@
     <script src="{{ url_for('static', filename='js/bootstrap.min.js') }}"></script>
     {{ moment.include_moment(local_js=url_for('static', filename='js/moment-with-locales.min.js')) }}
     {{ moment.locale(auto_detect=True) }}
+    <script>
+        var csrf_token = "{{ csrf_token() }}";
+        var DEFAULT_ERROR_MESSAGE = '出错啦...';
+    </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 {% endblock %}
 </body>
