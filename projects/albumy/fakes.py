@@ -90,3 +90,10 @@ def fake_collection(count=50):
         user = User.query.get(random.randint(1, User.query.count()))
         user.collect(Photo.query.get(random.randint(1, Photo.query.count())))
     db.session.commit()
+
+def fake_follow(count=50):
+    for i in range(count):
+        user = User.query.get(random.randint(1, User.query.count()))
+        user2 = User.query.get(random.randint(1, User.query.count()))
+        user.follow(user2)
+    db.session.commit()

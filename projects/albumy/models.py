@@ -48,6 +48,14 @@ class Permission(db.Model):
     name = db.Column(db.String(30), unique=True)
     roles = db.relationship('Role', secondary=roles_permissions, back_populates='permissions')
 
+class Follow(db.Model):
+    follower_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    followed_id = db.Column(db.Integer, db.ForeignKey('user.id'), primary_key=True)
+    timestamp = db.Column(db.DateTime, default=datetime.utcnow)
+
+    follower = db.relationship('User', foreign_keys=[follower_id], back_populates='following', lazy='joined')
+    followed = db.relationship('User', foreign_keys=[followed_id], back_populates='followers', lazy='joined')
+
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     # 资料
@@ -73,11 +81,15 @@ class User(db.Model, UserMixin):
 
     collections = db.relationship('Collect', back_populates='collector', cascade='all')
 
+    following = db.relationship('Follow', foreign_keys=[Follow.follower_id], back_populates='follower', lazy='dynamic', cascade='all')
+    followers = db.relationship('Follow', foreign_keys=[Follow.followed_id], back_populates='followed', lazy='dynamic', cascade='all')
+
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         # ...
         self.set_role()
         self.generate_avatar()
+        self.follow(self)  # 自己关注自己
 
     def set_role(self):
         if self.role is None:
@@ -127,6 +139,25 @@ class User(db.Model, UserMixin):
             db.session.delete(collect)
             db.session.commit()
 
+    def is_following(self, user):
+        if user.id is None:
+            return False
+        return self.following.filter_by(followed_id=user.id).first() is not None
+
+    def is_followed_by(self, user):
+        return self.followers.filter_by(follower_id=user.id).first() is not None
+
+    def follow(self, user):
+        if not self.is_following(user):
+            follow = Follow(follower=self, followed=user)
+            db.session.add(follow)
+            db.session.commit()
+
+    def unfollow(self, user):
+        follow = self.following.filter_by(follower_id=self.id, followed_id=user.id).first()
+        if follow:
+            db.session.delete(follow)
+            db.session.commit()
 
 # 标签与图片的多对多关系使用关联表 tagging 存储
 tagging = db.Table('tagging',
