@@ -10,6 +10,35 @@
     </div>
 {% endmacro %}
 
+{% macro follow_area(user) %}
+    {% if current_user.is_authenticated %}
+        {% if user != current_user %}   <!-- 不对自己显示关注按钮 -->
+            {% if current_user.is_following(user) %}  <!-- 当前用户正在关注该用户时，显示取消关注按钮 -->
+                <form action="{{ url_for('user.unfollow', username=user.username, next=request.full_path) }}" class="inline" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-dark btn-sm" type="submit">取消关注</button>
+                    {% if current_user.is_followed_by(user) %}  <!-- 若当前用户同时被该用户关注，则显示 “已相互关注” -->
+                        <p class="badge badge-light">已相互关注</p>
+                    {% endif %}
+                </form>
+            {% else %}  <!-- 当前用户还没有关注该用户时，显示关注按钮 -->
+                <form action="{{ url_for('user.follow', username=user.username, next=request.full_path) }}" class="inline" method="POST">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="btn btn-dark btn-sm" type="submit">关注</button>
+                    {% if current_user.is_followed_by(user) %}  <!-- 若该用户关注了当前用户，则显示 “关注了你” -->
+                        <p class="badge badge-light">关注了你</p>
+                    {% endif %}
+                </form>
+            {% endif %}
+        {% endif %}
+    {% else %}  <!-- 显示给未登录的用户 -->
+        <form action="{{ url_for('user.follow', username=user.username) }}" class="inline" method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button class="btn btn-dark btn-sm" type="submit">关注</button>
+        </form>
+    {% endif %}
+{% endmacro %}
+
 {% macro user_card(user) %}
     <div class="user-card text-center">
         <a href="{{ url_for('user.index', username=user.username) }}">
@@ -20,5 +49,6 @@
                 {{ user.name }}
             </a>
         </h6>
+        {{ follow_area(user) }}
     </div>
 {% endmacro %}
