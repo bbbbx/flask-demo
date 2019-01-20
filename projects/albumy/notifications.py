@@ -10,10 +10,10 @@ def push_follow_notification(follower, receiver):
     db.session.add(notification)
     db.session.commit()
 
-def push_commit_notification(photo_id, receiver, page=1):
+def push_comment_notification(photo_id, receiver, page=1):
     '''推送评论提醒'''
     message = '<a href="%s">这个照片</a>有一个新的评论或回复。' % \
-              (url_for('main.show_photo', photo_id=photo_id), page=page)
+              (url_for('main.show_photo', photo_id=photo_id, page=page))
     notification = Notification(message=message, receiver=receiver)
     db.session.add(notification)
     db.session.commit()

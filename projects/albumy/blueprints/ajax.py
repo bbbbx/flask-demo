@@ -1,7 +1,8 @@
 from flask import Blueprint, render_template, jsonify
 from flask_login import current_user
-from albumy.models import User
+from albumy.models import User, Notification
 from albumy.decorators import permission_required, confirm_required
+from albumy.notifications import push_follow_notification
 
 ajax_bp = Blueprint('ajax', __name__)
 
@@ -29,6 +30,7 @@ def follow(username):
         return jsonify(message='已经关注了。'), 400
     
     current_user.follow(user)
+    push_follow_notification(follower=current_user, receiver=user)
     return jsonify(message='关注成功。')
 
 @ajax_bp.route('/unfollow/<username>', methods=['POST'])
@@ -42,3 +44,10 @@ def unfollow(username):
     
     current_user.unfollow(user)
     return jsonify(message='取消关注成功。')
+
+@ajax_bp.route('/notifications-count')
+def notifications_count():
+    if not current_user.is_authenticated:
+        return jsonify(message='请先登录。'), 403
+    count = Notification.query.with_parent(current_user).filter_by(is_read=False).count()
+    return jsonify(count=count)

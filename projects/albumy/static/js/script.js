@@ -167,4 +167,24 @@ $(function() {
     $("[data-toggle='tooltip']").tooltip({
         title: moment($(this).data('timestamp')).format('LL')
     });
+
+    function updateNotificationsCount() {
+        var $el = $('#notification-badge');
+        $.ajax({
+            type: 'GET',
+            url: $el.data('href'),
+            success: function(data) {
+                if (data.count == 0) {
+                    $el.hide();
+                } else {
+                    $el.show();
+                    $el.text(data.count);
+                }
+            }
+        })
+    }
+
+    if (is_authenticated) {
+        setInterval(updateNotificationsCount, 30000);  // 每 30 秒发送一个 ajax
+    }
 })

@@ -41,6 +41,12 @@
                 </div>
                 <div class="navbar-nav ml-auto">
                 {% if current_user.is_authenticated %}
+                    <a href="{{ url_for('main.show_notifications', filter_rule='unread') }}" class="nav-item nav-link">
+                        <span class="oi oi-bell"></span>
+                        <span id="notification-badge"
+                                class="{% if notification_count == 0 %}hide{% endif %} badge badge-danger badge-notification"
+                                data-href="{{ url_for('ajax.notifications_count') }}">{{ notification_count }}</span>
+                    </a>
                     <a title="上传" href="{{ url_for('main.upload') }}" class="nav-item nav-link">
                         <span class="oi oi-cloud-upload"></span>&nbsp;&nbsp;
                     </a>
@@ -108,6 +114,11 @@
     <script>
         var csrf_token = "{{ csrf_token() }}";
         var DEFAULT_ERROR_MESSAGE = '出错啦...';
+        {% if current_user.is_authenticated %}
+            var is_authenticated = true;
+        {% else %}
+            var is_authenticated = false;
+        {% endif %}
     </script>
     <script src="{{ url_for('static', filename='js/script.js') }}"></script>
 {% endblock %}
