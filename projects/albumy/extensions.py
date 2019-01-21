@@ -23,8 +23,12 @@ def load_user(user_id):
     return user
 
 login_manager.login_view = 'auth.login'
-# login_manager.login_manager = 'Your custom message'
+login_manager.login_manager = '请先登录。'
 login_manager.login_message_category = 'warning'
+
+login_manager.refresh_view = 'auth.re_authenticate'
+login_manager.needs_refresh_message = '为了保护你的账户安全，请重新认证。'
+login_manager.needs_refresh_message_category = 'warning'
 
 class Guest(AnonymousUserMixin):
     @property

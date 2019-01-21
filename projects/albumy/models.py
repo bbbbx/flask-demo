@@ -86,6 +86,8 @@ class User(db.Model, UserMixin):
 
     notifications = db.relationship('Notification', back_populates='receiver', cascade='all')
 
+    avatar_raw = db.Column(db.String(255))  # 用户上传的原始头像文件名
+
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         # ...

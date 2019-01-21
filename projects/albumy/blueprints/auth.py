@@ -1,5 +1,5 @@
 from flask import Blueprint, render_template, redirect, url_for, flash, request
-from flask_login import current_user, login_required, login_user, logout_user
+from flask_login import current_user, login_required, login_user, logout_user, login_fresh, confirm_login
 from albumy.forms.auth import RegisterForm, LoginForm, ForgetPasswordForm, ResetPasswordForm
 from albumy.models import User
 from albumy.extensions import db
@@ -114,3 +114,18 @@ def resend_confirm_email():
     send_confirm_account_email(user=current_user, token=token)
     flash('新的确认邮件已发送，请查收你的收信箱。', 'info')
     return redirect(url_for('main.index'))
+
+@auth_bp.route('/re-authenticate', methods=['GET', 'POST'])
+@login_required
+def re_authenticate():
+    ''''对已经登录的用户重新认证，保持 “新鲜”。
+    类似 Github 等认证。对于一些敏感操作需要重新认证，例如修改密码。
+    '''
+    if login_fresh():
+        return redirect(url_for('main.index'))
+    
+    form = LoginForm()
+    if form.validate_on_submit() and current_user.validate_password(form.password.data):
+        confirm_login()
+        return redirect_back()
+    return render_template('auth/login.html', form=form)

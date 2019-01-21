@@ -52,6 +52,16 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - 查看 SQLite 的 ER 图：[Alexis-benoist/eralchemy](https://github.com/Alexis-benoist/eralchemy)
 - [Identicon](https://zh.wikipedia.org/wiki/Identicon)：一种基于用户信息的散列值，可用作默认头像
 - 使用轮询（`setInterval` 每 30 秒发送一个 Ajax）模拟服务器推送比较简单，但存在较大的缺陷。如轮询时间间隔过长会有一定的延迟，太短又会增加服务器负担。长轮询可以解决这个问题，但在实现上比较复杂。我们也可以使用 Server-sent Events（SSE，服务器推送事件）来实现真正的服务器端推送，具体实现上可以考虑使用 [singingwolfboy/flask-sse](https://github.com/singingwolfboy/flask-sse)，还可以使用更完善和强大的双向通信协议 WebSocket 来实现实时更新。
+- 图片裁剪：Jquery 插件 [content/Jcrop](http://deepliquid.com/content/Jcrop.html)。另一个裁剪库[Jcrop](https://github.com/tapmodo/Jcrop)
+- 用户自定义头像流程：
+    1. 用户上传图片文件；
+    2. 上传完成后图片会显示在裁剪窗口；
+    3. 用户裁剪图片时可以在裁剪窗口右侧看到预览；
+    4. 用户单击 “保存” 按钮；
+    5. 程序保存裁剪后的图片并更新头像。
+    
+    所以，一共上传两张图片，一张用户上传的原图片，一张用户裁剪后的图片。
+- `<form>` 上传文件时，需要将 `enctype` 编码类型 attribute 设为 `multipart/form-data`。
 
 ## 原型设计工具
 
