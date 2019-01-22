@@ -1,2 +1,3 @@
-/static/js/*.js linguist-generated=false
-/static/css/*.css linguist-generated=false
+/static/*/*.js linguist-generated=false
+/static/*/*.css linguist-generated=false
+/static/*/*.html linguist-generated=false
