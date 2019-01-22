@@ -1,3 +1,12 @@
 .env
+*.so
 .vscode
-uploads
+
+demos/form/uploads/*
+!demos/form/uploads/.gitkeep
+
+projects/uploads/*
+!projects/uploads/.gitkeep
+!projects/uploads/avatars
+projects/uploads/avatars/*
+!projects/uploads/avatars/.gitkeep
