@@ -1,5 +1,7 @@
 <p>你好 {{ user.username }}，</p>
 <p>请访问下列的链接验证你的新邮箱地址：<br>
-    <a href="{{ url_for('user.change_email', token=token, _external=True) }}">{{ url_for('user.change_email', token=token, _external=True) }}</a>
+    <a href="{{ url_for('auth.change_email', token=token, _external=True) }}">
+        {{ url_for('auth.change_email', token=token, _external=True) }}
+    </a>
 </p>
 <small>（请不要回复该邮件，该邮箱不作回复。)</small>

@@ -1,4 +1,4 @@
-from wtforms import StringField, SubmitField, TextAreaField, HiddenField, PasswordField
+from wtforms import StringField, SubmitField, TextAreaField, HiddenField, PasswordField, BooleanField
 from wtforms.validators import DataRequired, Length, Email, Regexp, Optional, ValidationError, EqualTo
 from flask_wtf import FlaskForm
 from flask_wtf.file import FileField, FileAllowed, FileRequired
@@ -33,3 +33,25 @@ class ChangePasswordForm(FlaskForm):
     new_password = PasswordField('新密码', validators=[DataRequired(), Length(8, 128)])
     new_password_confirm = PasswordField('确认新密码', validators=[DataRequired(), Length(8, 128), EqualTo('new_password')])
     submit = SubmitField('确定')
+
+class NotificationSettingForm(FlaskForm):
+    receive_comment_notification = BooleanField('新的评论')
+    receive_follow_notification = BooleanField('新的关注者')
+    receive_collect_notification = BooleanField('新的收藏')
+    submit = SubmitField('确定')
+
+class PrivacySettingForm(FlaskForm):
+    public_collections = BooleanField('公开收藏')
+    submit = SubmitField('确定')
+
+class DeleteAccountForm(FlaskForm):
+    username = StringField('用户名', validators=[DataRequired(), Length(1, 20)])
+    submit = SubmitField('确定')
+
+    def validate_username(self, field):
+        if field != self.username:
+            raise ValidationError('用户名不正确！')
+
+class ChangeEmailForm(FlaskForm):
+    email = StringField('新的邮箱地址', validators=[DataRequired(), Length(1, 254), Email()])
+    submit = SubmitField()

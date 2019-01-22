@@ -2,10 +2,11 @@ from flask import Blueprint, request, render_template, current_app, flash, redir
 from flask_login import login_required, current_user, fresh_login_required
 from albumy.models import User, Photo, Collect
 from albumy.decorators import confirm_required, permission_required
-from albumy.utils import redirect_back, flash_errors
+from albumy.utils import redirect_back, flash_errors, generate_token, validate_token, Operations
 from albumy.notifications import push_follow_notification
-from albumy.forms.user import UploadAvatarForm, CropAvatarForm, ChangePasswordForm, EditProfileForm
+from albumy.forms.user import UploadAvatarForm, CropAvatarForm, ChangePasswordForm, EditProfileForm, NotificationSettingForm, PrivacySettingForm, DeleteAccountForm, ChangeEmailForm
 from albumy.extensions import db, avatars
+from albumy.emails import send_change_email_email
 
 user_bp = Blueprint('user', __name__)
 
@@ -39,7 +40,8 @@ def follow(username):
     
     current_user.follow(user)
     flash('关注成功。', 'success')
-    push_follow_notification(follower=current_user, receiver=user)
+    if current_user.receive_follow_notification:
+        push_follow_notification(follower=current_user, receiver=user)
     return redirect_back()
 
 @user_bp.route('/unfollow/<username>', methods=['POST'])
@@ -152,14 +154,52 @@ def change_password():
     return render_template('user/settings/change_password.html', form=form)
 
 
-@user_bp.route('/settings/email')
+@user_bp.route('/settings/email', methods=['GET', 'POST'])
+@fresh_login_required
 def change_email_request():
-    pass
+    form = ChangeEmailForm()
+    if form.validate_on_submit():
+        token = generate_token(current_user, operation=Operations.CHANGE_EMAIL, new_email=form.email.data)
+        send_change_email_email(current_user, token=token, to=current_user.email)
+        flash('邮件已发送到你的旧邮箱，请注意查收。', 'success')
+        return redirect(url_for('.change_email_request'))
+    form.email.data = current_user.email
+    return render_template('user/settings/change_email.html', form=form)
 
-@user_bp.route('/settings/notification-setting')
+@user_bp.route('/settings/notification-setting', methods=['GET', 'POST'])
 def notification_setting():
-    return render_template('user/settings/edit_notification.html')
+    form = NotificationSettingForm()
+    if form.validate_on_submit():
+        current_user.receive_comment_notification = form.receive_comment_notification.data
+        current_user.receive_follow_notification = form.receive_follow_notification.data
+        current_user.receive_collect_notification = form.receive_collect_notification.data
+        db.session.commit()
+        flash('通知设置已更新。', 'success')
+        return redirect(url_for('.notification_setting'))
+    form.receive_comment_notification.data = current_user.receive_comment_notification
+    form.receive_follow_notification.data = current_user.receive_follow_notification
+    form.receive_collect_notification.data = current_user.receive_collect_notification
+    return render_template('user/settings/edit_notification.html', form=form)
 
-@user_bp.route('/settings/account')
+@user_bp.route('/settings/account', methods=['GET', 'POST'])
+@fresh_login_required
 def delete_account():
-    return render_template('user/settings/delete_account.html')
+    form = DeleteAccountForm()
+    if form.validate_on_submit():
+        db.session.delete(current_user)
+        db.session.commit()
+        flash('你的账户已被删除，拜了个拜。', 'success')
+        return redirect(url_for('main.index'))
+    return render_template('user/settings/delete_account.html', form=form)
+
+@user_bp.route('/settings/privacy', methods=['GET', 'POST'])
+@login_required
+def privacy_setting():
+    form = PrivacySettingForm()
+    if form.validate_on_submit():
+        current_user.show_collections = form.public_collections.data
+        db.session.commit()
+        flash('设置成功。', 'success')
+        return redirect(url_for('.privacy_setting'))
+    form.public_collections.data = current_user.show_collections
+    return render_template('user/settings/edit_privacy.html', form=form)

@@ -86,7 +86,13 @@ class User(db.Model, UserMixin):
 
     notifications = db.relationship('Notification', back_populates='receiver', cascade='all')
 
+    receive_comment_notification = db.Column(db.Boolean, default=True)
+    receive_follow_notification = db.Column(db.Boolean, default=True)
+    receive_collect_notification = db.Column(db.Boolean, default=True)
+
     avatar_raw = db.Column(db.String(255))  # 用户上传的原始头像文件名
+
+    show_collections = db.Column(db.Boolean, default=True)
 
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
@@ -241,3 +247,12 @@ def delete_photos(**kwargs):
             if os.path.exists(path):
                 os.remove(path)
 
+@db.event.listens_for(User, 'after_delete', named=True)
+def delete_avatars(**kwargs):
+    '''监听 User 记录删除后，自动删除用户对应的头像文件。'''
+    target = kwargs['target']
+    for filename in [target.avatar_s, target.avatar_m, target.avatar_l, target.avatar_raw]:
+        if filename is not None:  # avatar_raw 可能会是 None
+            path = os.path.join(current_app.config['AVATARS_SAVE_PATH'], filename)
+            if os.path.exists(path):  # 不是每个 filename 都会 map 为唯一的文件
+                os.remove(path)

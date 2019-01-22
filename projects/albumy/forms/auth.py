@@ -20,7 +20,7 @@ class RegisterForm(FlaskForm):
             raise ValidationError('该用户名已使用。')
 
 class LoginForm(FlaskForm):
-    email = StringField('邮箱', validators=[DataRequired(), Length(1, 254), Email])
+    email = StringField('邮箱', validators=[DataRequired(), Length(1, 254), Email()])
     password = PasswordField('密码', validators=[DataRequired()])
     remember_me = BooleanField('记住我？')
     submit = SubmitField('登录')
