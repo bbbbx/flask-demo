@@ -19,14 +19,14 @@ class EditProfileForm(FlaskForm):
 
 class UploadAvatarForm(FlaskForm):
     image = FileField('头像（<= 3M）', validators=[FileRequired(), FileAllowed(['jpg', 'png'], '文件格式必须为 .png 或 .jpg')])
-    submit = SubmitField('确定')
+    submit = SubmitField('确定上传')
 
 class CropAvatarForm(FlaskForm):
     x = HiddenField()
     y = HiddenField()
     h = HiddenField()
     w = HiddenField()
-    submit = SubmitField('裁剪并上传')
+    submit = SubmitField('修改头像')
 
 class ChangePasswordForm(FlaskForm):
     old_password = PasswordField('旧密码', validators=[DataRequired()])

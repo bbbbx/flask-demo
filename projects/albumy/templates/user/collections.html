@@ -9,7 +9,7 @@
     <div class="row">
         <div class="col-md-12">
             {% if collects %}
-                {% if user.public_collections or current_user == user %}
+                {% if user.show_collections or current_user == user %}
                     {% for collect in collects %}
                         {{ photo_card(collect.collected) }}
                     {% endfor %}
