@@ -4,7 +4,7 @@ from flask_login import UserMixin
 from flask_avatars import Identicon
 from flask import current_app
 from werkzeug.security import generate_password_hash, check_password_hash
-from albumy.extensions import db
+from albumy.extensions import db, whooshee
 
 # 每个角色可以拥有多个权限，权限可以被多个角色所拥有
 roles_permissions = db.Table(
@@ -56,6 +56,7 @@ class Follow(db.Model):
     follower = db.relationship('User', foreign_keys=[follower_id], back_populates='following', lazy='joined')
     followed = db.relationship('User', foreign_keys=[followed_id], back_populates='followers', lazy='joined')
 
+@whooshee.register_model('username', 'name')  # 对注册的字段建立索引，全文搜索需要用到索引
 class User(db.Model, UserMixin):
     id = db.Column(db.Integer, primary_key=True)
     # 资料
@@ -175,6 +176,7 @@ tagging = db.Table('tagging',
     db.Column('tag_id', db.Integer, db.ForeignKey('tag.id'))
 )
 
+@whooshee.register_model('description')
 class Photo(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     description = db.Column(db.String(500))
@@ -205,6 +207,7 @@ class Collect(db.Model):
     collected = db.relationship('Photo', back_populates='collectors', lazy='joined')
 
 
+@whooshee.register_model('name')
 class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     name = db.Column(db.String(30), index=True)

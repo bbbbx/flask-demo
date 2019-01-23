@@ -4,9 +4,9 @@ from flask_login import login_required, current_user
 from flask_dropzone import random_filename
 from sqlalchemy.sql.expression import func
 from albumy.decorators import confirm_required, permission_required
-from albumy.models import Photo, Tag, Comment, Collect, Notification, Follow
+from albumy.models import Photo, Tag, Comment, Collect, Notification, Follow, User
 from albumy.extensions import db
-from albumy.utils import resize_image, flash_errors
+from albumy.utils import resize_image, flash_errors, redirect_back
 from albumy.forms.main import DescriptionForm, TagForm, CommentForm
 from albumy.notifications import push_collect_notification, push_comment_notification
 
@@ -277,7 +277,8 @@ def new_comment(photo_id):
         replied_id = request.args.get('reply')
         if replied_id:
             comment.replied = Comment.query.get_or_404(replied_id)
-            push_comment_notification(photo_id=photo.id, receiver=comment.replied.author)
+            if comment.replied.author.receive_comment_notification:
+                push_comment_notification(photo_id=photo.id, receiver=comment.replied.author)
         db.session.add(comment)
         db.session.commit()
         flash('评论成功。', 'success')
@@ -360,3 +361,25 @@ def read_notification(notification_id):
     db.session.commit()
     flash('通知已读。', 'success')
     return redirect(url_for('.show_notifications'))
+
+@main_bp.route('/search')
+def search():
+    q = request.args.get('q', '')
+    if q == '':
+        flash('请输入用户名、照片名或照片标签名', 'warning')
+        return redirect_back()
+    if len(q.strip()) < 3:
+        flash('请输入 3 个字符及以上。', 'warning')
+        return redirect_back()
+        
+    category = request.args.get('category', 'photo')
+    page = request.args.get('page', 1, type=int)
+    per_page = current_app.config['ALBUMY_SEARCH_RESULT_PER_PAGE']
+    if category == 'user':
+        pagination = User.query.whooshee_search(q).paginate(page, per_page)
+    elif category == 'tag':
+        pagination = Tag.query.whooshee_search(q).paginate(page, per_page)
+    else:
+        pagination = Photo.query.whooshee_search(q).paginate(page, per_page)
+    results = pagination.items
+    return render_template('main/search.html', q=q, results=results, pagination=pagination, category=category)

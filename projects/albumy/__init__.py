@@ -2,7 +2,7 @@ import os
 import click
 from flask import Flask, render_template
 from flask_login import current_user
-from albumy.extensions import db, bootstrap, login_manager, mail, moment, dropzone, csrf, avatars
+from albumy.extensions import db, bootstrap, login_manager, mail, moment, dropzone, csrf, avatars, whooshee
 from albumy.models import Role, User, Permission, Notification
 from albumy.blueprints import auth, main, user, admin, ajax
 from albumy.settings import config
@@ -69,6 +69,7 @@ def register_extensions(app):
     dropzone.init_app(app)
     csrf.init_app(app)
     avatars.init_app(app)
+    whooshee.init_app(app)
 
 
 def register_blueprints(app):

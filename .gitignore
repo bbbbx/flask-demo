@@ -10,3 +10,6 @@ projects/uploads/*
 !projects/uploads/avatars
 projects/uploads/avatars/*
 !projects/uploads/avatars/.gitkeep
+
+projects/whooshee/*
+!projects/whooshee/.gitkeep

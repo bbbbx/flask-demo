@@ -29,6 +29,7 @@ flask-dropzone = "*"
 eralchemy = "*"
 cymysql = "*"
 flask-avatars = "*"
+flask-whooshee = "*"
 
 [requires]
 python_version = "3.7"
