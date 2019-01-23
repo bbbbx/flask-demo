@@ -9,13 +9,24 @@ $(function() {
         }
     });
 
-    function update_followers_count(id) {
+    function updateFollowersCount(id) {
         var $el = $('#followers-count-' + id);
         $.ajax({
             type: 'GET',
             url: $el.data('href'),
             success: function (data) {
                 $el.text(data.count);
+            }
+        });
+    }
+
+    function updateCollectorsCount(id) {
+        var $el = $('#collectors-count-' + id);
+        $.ajax({
+            type: 'GET',
+            url: $el.data('href'),
+            success: function (data) {
+                $('#collectors-count-' + id).text(data.count);
             }
         });
     }
@@ -30,7 +41,7 @@ $(function() {
             success: function(data) {
                 $el.prev().show();
                 $el.hide();
-                update_followers_count(id);
+                updateFollowersCount(id);
                 toast('关注成功。')
             }
         });
@@ -46,10 +57,42 @@ $(function() {
             success: function(data) {
                 $el.next().show();
                 $el.hide();
-                update_followers_count(id);
+                updateFollowersCount(id);
                 toast('取消关注成功。')
             }
         });
+    }
+
+    function collect(e) {
+        var $el = $(e.target).data('href') ? $(e.target) : $(e.target).parent('.collect-btn');
+        var id = $el.data('id');
+
+        $.ajax({
+            type: 'POST',
+            url: $el.data('href'),
+            success: function(data) {
+                $el.prev().show();
+                $el.hide();
+                updateCollectorsCount(id)
+                toast(data.message)
+            }
+        })
+    }
+
+    function uncollect(e) {
+        var $el = $(e.target).data('href') ? $(e.target) : $(e.target).parent('.uncollect-btn');
+        var id = $el.data('id');
+
+        $.ajax({
+            type: 'POST',
+            url: $el.data('href') || $el.parent('.uncollect-btn').data('href'),
+            success: function(data) {
+                $el.next().show();
+                $el.hide();
+                updateCollectorsCount(id)
+                toast(data.message)
+            }
+        })
     }
 
     var hoverTimer = null;
@@ -71,8 +114,6 @@ $(function() {
         }, 3000);
     }
 
-    $(document).on('click', '.follow-btn', follow.bind(this));
-    $(document).on('click', '.unfollow-btn', unfollow.bind(this));
     $(document).ajaxError(function(event, request, settings) {  // 同一处理 ajax 的 error 回调
         if (request.responseJSON && request.responseJSON.hasOwnProperty('message')) {
             message = request.responseJSON.message;
@@ -187,4 +228,9 @@ $(function() {
     if (is_authenticated) {
         setInterval(updateNotificationsCount, 30000);  // 每 30 秒发送一个 ajax
     }
+
+    $(document).on('click', '.follow-btn', follow.bind(this));
+    $(document).on('click', '.unfollow-btn', unfollow.bind(this));
+    $(document).on('click', '.collect-btn', collect.bind(this));
+    $(document).on('click', '.uncollect-btn', uncollect.bind(this));
 })

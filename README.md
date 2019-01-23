@@ -10,6 +10,7 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - 邮件：flask-mail
     - 异步任务队列：Celery + Redis + RabbitMQ（启动 Celery `celery worker -A bluelog.celery_worker.celery --loglevel=info -E` 记得先导入环境变量）
 - 表单：flask-wtf
+    - 使用隐藏字段 `<input type="hidden" name="csrf_token" value="xxxxxxx">`，带上一个 token 给服务器校验，防止 CSRF
     - 文件上传：flask-wtf 的 `FileField`、flask-uploads
     - 富文本编辑器：flask-CKEditor（谨防 XSS）
 - 日期和时间：flask-moment
@@ -25,7 +26,7 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
     - `is_anonymous`：如果当前用户未登录，则返回 `True`
     - `get_id()`：以 Unicode 形式返回用户的唯一标识符
 - 将数据序列化为字符串：[pallets/itsdangerous](https://github.com/pallets/itsdangerous)，可用于将用户 ID 生成 token 来传输。
-- 生成 slug（将标题装换为音译，可读性好，对搜索引擎和用户友好）：avian/unidecode
+- 生成 slug（将标题转换为音译，可读性好，对搜索引擎和用户友好）：avian/unidecode
 - Web 服务器：uWSGI
 - 代理服务器：Nginx
 - 表格化导出 XLS、CSV、JSON、YAML 等格式：[kennethreitz/tablib](https://github.com/kennethreitz/tablib)
@@ -35,7 +36,7 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
     - Werkzeug 在 `security` 模块中提供了一个 `generate_password_hash(password, method='pbkdf2:sha256', salt_length=8)` 函数用于生成散列值，`check_password_hash(pwhash, password)` 函数用来检查密码散列值与密码是否对应。
 - Exception 追踪：[Sentry](https://sentry.io/welcome/)
 - Flask-Avatars：生成头像
-- [Whoosh](https://bitbucket.org/mchaput/whoosh)：全文搜索
+- [Whoosh](https://bitbucket.org/mchaput/whoosh)：数据库搜索引擎，Python 写的。全文搜索的原理是对每个词建立一个索引，指明该词在数据库中出现的次数和位置，当用户查询时，检索程序通过索引进行查找，并返回匹配的数据。
 - Flask-Whooshee：集成 Whoosh
 - [Flask-Dropzone](https://github.com/greyli/flask-dropzone)：使用 Dropzone.js 在 Flask 应用中上传文件
 - 占位图片：
@@ -66,6 +67,7 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
     1. 临时屏蔽用户信息。通过给 User Model 设置一个字段来判断用户是否已注销，使用占位信息显示已注销用户的个人信息和头像等，保留图片和评论等数据。用户可以登录重新激活账户。
     2. 临时屏蔽用户信息，如果一定时间后用户没有激活账户，则直接删除用户的所有数据。
     3. 直接删除用户的相关信息。在真实中一般不使用这种方法。
+- 在大多数情况下，联结（join）查询比子查询的性能要好。
 
 ## 原型设计工具
 

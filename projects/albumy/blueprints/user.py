@@ -160,8 +160,8 @@ def change_email_request():
     form = ChangeEmailForm()
     if form.validate_on_submit():
         token = generate_token(current_user, operation=Operations.CHANGE_EMAIL, new_email=form.email.data)
-        send_change_email_email(current_user, token=token, to=current_user.email)
-        flash('邮件已发送到你的旧邮箱，请注意查收。', 'success')
+        send_change_email_email(current_user, token=token, to=form.email.data)
+        flash('确认邮件已发送到你的新邮箱，请注意查收。', 'success')
         return redirect(url_for('.change_email_request'))
     form.email.data = current_user.email
     return render_template('user/settings/change_email.html', form=form)
