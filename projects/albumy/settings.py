@@ -47,6 +47,8 @@ class BaseConfig:
         ALBUMY_PHOTO_SIZE['medium']: '_m',  # display
     }
 
+    WHOOSHEE_MIN_STRING_LEN = 1    # Whooshee 搜索关键词的最小长度，默认为 3
+
     MAIL_SERVER = os.getenv('MAIL_SERVER')
     MAIL_PORT = 465
     MAIL_USE_SSL = True

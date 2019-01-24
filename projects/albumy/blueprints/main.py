@@ -368,7 +368,7 @@ def search():
     if q == '':
         flash('请输入用户名、照片名或照片标签名', 'warning')
         return redirect_back()
-    if len(q.strip()) < 3:
+    if len(q.strip()) < current_app.config['WHOOSHEE_MIN_STRING_LEN']:
         flash('请输入 3 个字符及以上。', 'warning')
         return redirect_back()
         
