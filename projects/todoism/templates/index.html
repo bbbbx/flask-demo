@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <link rel="icon" href="{{ url_for('static', filename='favicon.ico') }}" type="image/x-icon">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/materialize.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/icon?family=Material+Icons">
+    <title>Todoism</title>
+</head>
+<body>
+    <div class="main"></div>
+    <script src="{{ url_for('static', filename='js/jquery.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/materialize.min.js') }}"></script>
+    <script type="text/javascript">
+        var csrfToken = "{{ csrf_token() }}"
+
+        var loginPageUrl = "{{ url_for('auth.login') }}"
+        var appPageUrl = "{{ url_for('todo.index') }}"
+        var introPageUrl = "{{ url_for('home.intro') }}"
+        var newItemUrl = "{{ url_for('todo.new_item') }}"
+        var clearItemUrl = "{{ url_for('todo.clear_items') }}"
+        var loginUrl = "{{ url_for('auth.login') }}"
+        var logoutUrl = "{{ url_for('auth.logout') }}"
+        var registerUrl = "{{ url_for('auth.register') }}"
+
+        var DEFAULT_ERROR_MESSAGE = '请求返回错误！'
+    </script>
+    <script src="{{ url_for('static', filename='js/script.js') }}"></script>
+</body>
+</html>

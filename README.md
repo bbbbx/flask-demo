@@ -37,7 +37,7 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - Exception 追踪：[Sentry](https://sentry.io/welcome/)
 - Flask-Avatars：生成头像
 - [Whoosh](https://bitbucket.org/mchaput/whoosh)：数据库搜索引擎，Python 写的。全文搜索的原理是对每个词建立一个索引，指明该词在数据库中出现的次数和位置，当用户查询时，检索程序通过索引进行查找，并返回匹配的数据。
-- Flask-Whooshee：集成 Whoosh
+- Flask-Whooshee：集成 Whoosh，可以配置 `WHOOSHEE_MIN_STRING_LEN` 对搜索关键字的最小字符数进行限制，默认为 3。
 - [Flask-Dropzone](https://github.com/greyli/flask-dropzone)：使用 Dropzone.js 在 Flask 应用中上传文件
 - 占位图片：
     - 基于 Unsplash 的 [Lorem Picsum](http://picsum.photos/)
@@ -68,6 +68,25 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
     2. 临时屏蔽用户信息，如果一定时间后用户没有激活账户，则直接删除用户的所有数据。
     3. 直接删除用户的相关信息。在真实中一般不使用这种方法。
 - 在大多数情况下，联结（join）查询比子查询的性能要好。
+- 后台管理系统应该拥有更多有用的功能，比如：
+    - 用户行为分析
+    - 网站访问分析
+    - 内容过滤与关键词审核
+    - 给用户推送系统消息
+    - 给用户推送系统邮件
+    - 编辑推荐内容
+    - 网站固定内容编辑
+    - 数据库在线操作
+- i18n：[python-babel/babel](https://github.com/python-babel/babel)，不是编译 ES 6 的那个 babel
+- 给 Flask 支持 i18n 和 l10n：[python-babel/flask-babel](https://github.com/python-babel/flask-babel)
+- i18n：国际化，给网站提供多种不同的语言，需要开发者解决，翻译者解决不了
+- l10n：本地化，将网站的语言转换为本地语言，只有翻译者可以解决，[https://wiki.mageia.org/en/What_is_i18n,_what_is_l10n](https://wiki.mageia.org/en/What_is_i18n,_what_is_l10n)
+- [pytz](https://pythonhosted.org/pytz/)：时区数据库，tz 即为 timezone
+- flask-cors：给 flask 支持 Cross Origin Resource Sharing，解决请求 API 时的跨域问题
+- [webargs](https://webargs.readthedocs.io/en/latest/)：用于解析 HTTP 请求的 arguments
+- [httpie](https://github.com/jakubroztocil/httpie)：命令行式的 HTTP 客户端，比 `curl` 简便
+- 只需在 `<i>` 标签内写出图标的名词即可渲染出对应名称的图标，这种特性称为 **ligatures**，例如 `<i class="material-icons">face</i>`
+- 另一个前端 framework：[Materialize](https://materializecss.com/)，基于 Material Design。
 
 ## 原型设计工具
 
