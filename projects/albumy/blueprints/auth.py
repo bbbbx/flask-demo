@@ -44,8 +44,8 @@ def login():
             if login_user(user, form.remember_me.data):
                 flash('登录成功。', 'success')
                 return redirect_back()
-            else:
-                flash('你的账号被封了。', 'warning')
+            else:  # 当 login_user() 返回 False 时，说明用户的 active 属性为 False
+                flash('你的账号被封了。', 'warning')   # 返回封禁提示
                 return redirect(url_for('main.index'))
         flash('无效的邮箱或密码', 'warning')
     return render_template('auth/login.html', form=form)

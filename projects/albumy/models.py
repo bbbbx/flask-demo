@@ -95,6 +95,36 @@ class User(db.Model, UserMixin):
 
     show_collections = db.Column(db.Boolean, default=True)
 
+    locked = db.Column(db.Boolean, default=False)
+    active = db.Column(db.Boolean, default=True)
+
+
+    def lock(self):
+        self.locked = True
+        self.role = Role.query.filter_by(name='Locked').first()
+        db.session.commit()
+    
+    def unlock(self):
+        self.locked = False
+        self.role = Role.query.filter_by(name='User').first()
+        db.session.commit()
+
+    @property
+    def is_active(self):
+        '''如果用户对象的 is_active 属性为 False，
+        则 Flask_Login 将拒绝该用户登录。
+        '''
+        return self.active
+    
+    def block(self):
+        '''封禁用户'''
+        self.active = False
+        db.session.commit()
+    
+    def unblock(self):
+        self.active = True
+        db.session.commit()
+
     def __init__(self, **kwargs):
         super(User, self).__init__(**kwargs)
         # ...

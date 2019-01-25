@@ -24,6 +24,24 @@
             Joined {{ moment(user.member_since).format('LL') }}
         </p>
         <div>
+            {% if current_user != user %}
+                {% if current_user.can('MODERATE') %}
+                    {% if user.locked %}
+                        <form action="{{ url_for('admin.unlock_user', user_id=user.id) }}" class="inline" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="submit" class="btn btn-secondary btn-sm" value="对该账号解锁">
+                        </form>
+                    {% else %}
+                        <form action="{{ url_for('admin.lock_user', user_id=user.id) }}" class="inline" method="POST">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                            <input type="submit" class="btn btn-secondary btn-sm" value="锁住该账号">
+                        </form>
+                    {% endif %}
+                    <a href="mailto:{{ user.email }}" class="btn btn-light btn-sm">给该用户发邮件</a>
+                {% endif %}
+            {% endif %}
+        </div>
+        <div>
             <div class="float-right">
                 {{ follow_area(user) }}
             </div>
