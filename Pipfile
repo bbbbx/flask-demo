@@ -30,6 +30,7 @@ eralchemy = "*"
 cymysql = "*"
 flask-avatars = "*"
 flask-whooshee = "*"
+flask-babel = "*"
 
 [requires]
 python_version = "3.7"
