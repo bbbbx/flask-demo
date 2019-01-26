@@ -38,6 +38,29 @@ $(document).ajaxError(function(e, request, settings) {
 
 });
 
+function displayDashboard() {
+    var all_count = $('.item').length;
+    if (all_count === 0) {
+        $('#dashboard').hide();
+    } else {
+        $('#dashboard').show();
+        $('ul.tabs').tabs();
+    }
+}
+
+function activeM() {
+    $('.sidenav').sidenav();
+    $('ul.tabs').tabs();
+    $('.modal').modal();
+    $('.tooltipped').tooltip();
+    $('.dropdown-trigger').dropdown({
+            constrainWidth: false,
+            coverTrigger: false
+        }
+    );
+    displayDashboard();
+}
+
 function register() {
     $.ajax({
         type: 'GET',
@@ -49,3 +72,29 @@ function register() {
         }
     })
 }
+
+function newItem(e) {
+    var $input = $('#item-input');
+    var value = $input.val().trim();
+    if (e.which !== ENTER_KEY || !value) {
+        return;     // 如果没有按下 Enter 键或输入为空，则直接返回
+    }
+    $input.focus().val('')
+    $.ajax({
+        type: 'POST',
+        url: newItemUrl,
+        data: JSON.stringify({ "body": value }),
+        // 如果没有指定，默认为 application/x-www-form-urlencodeed，即以表单的类型
+        contentType: 'application/json; charset=utf-8',
+        success: function(data) {
+            M.toast({ html: data.message, classes: 'rounded' });
+            $('.items').append(data.html);
+            activeM();          // 激活新插入 HTML 的 Meterialize 组件
+            refresh_count();    // 更新页面上的各个计数
+        }
+    })
+}
+
+$(document).on('keydown', '#item-input', newItem.bind(this));
+
+activeM();     // 初始化 Materialize

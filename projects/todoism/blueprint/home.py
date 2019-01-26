@@ -9,4 +9,4 @@ def index():
 
 @home_bp.route('/intro')
 def intro():
-    pass
+    return '<h1>Hello</h1>'
