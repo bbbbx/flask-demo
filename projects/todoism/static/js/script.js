@@ -16,7 +16,7 @@ $(window).on('hashchange', function() {
         type: 'GET',
         url: url,
         success: function(data) {
-            $('#main').hide().html(data).fadeIn(800);   // 插入子页面
+            $('#main').hide().html(data).fadeIn(0);   // 插入子页面
             activeM();     // 激活新插入的页面中的 Materialize 组件
         }
     })

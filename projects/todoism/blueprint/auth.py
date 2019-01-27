@@ -1,5 +1,5 @@
 from faker import Faker
-from flask import Blueprint, jsonify
+from flask import Blueprint, jsonify, render_template
 from todoism.models import User, Item
 
 auth_bp = Blueprint('auth', __name__)
@@ -7,7 +7,7 @@ fake = Faker()
 
 @auth_bp.route('/login')
 def login():
-    pass
+    return render_template('_login.html')
 
 @auth_bp.route('/register')
 def register():

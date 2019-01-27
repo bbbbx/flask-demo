@@ -20,10 +20,15 @@ class BaseConfig:
 
     SQLALCHEMY_TRACK_MODIFICATIONS = True
 
+    TODOISM_LOCALES = ['en_US', 'zh_Hans_CN']
+    BABEL_DEFAULT_LOCALE = TODOISM_LOCALES[0]
+
 class DevelopmentConfig(BaseConfig):
     SQLALCHEMY_DATABASE_URI = prefix + os.path.join(basedir, 'todoism-data-dev.sqlite3')
     # 使用 MySQL，需要 `pipenv install cymysql`
     # SQLALCHEMY_DATABASE_URI = 'mysql+cymysql://username:password@localhost:3306/albumy'
+
+    SERVER_NAME = 'todoism.com:5000'  # 坑点：Chrome 会强制将 *.dev 的域名改为 HTTPS 访问
 
 
 class TestingConfig(BaseConfig):
