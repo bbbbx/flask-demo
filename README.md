@@ -152,6 +152,27 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
    - Version 1：`http://api.example.com`
    - Version 2：`http://api2.example.com`
 
+## OAuth2
+
+在传统的 Web 应用中，用户的认证信息存储在浏览器的 cookie 中，但 cookie 在其他客户端中是没有的，所以我们不能通过 cookie 来记住用户的状态。因为 API 的无状态特征，所以需要用户在每一次获取受登录保护的资源时都要提供认证信息，但每次都让用户附加认证信息并不合理。一个更好的方法是用户通过一次认证后，在服务器端为用户生成一个 token，在之后的请求中，客户端可以通过 token 进行认证。
+
+OAuth（Open Authorization，开放授权）是一个 2007 年发布的授权标准，它是现代 Web API 中应用非常广泛的授权机制。
+
+OAuth 允许用户授权第三方移动应用有限制地访问用户存储在其他服务器上的信息，而不需要将用户名和密码提供给第三方移动应用。除了这种认证类型之外，[OAuth2](https://oauth.net/2) 还提供了多种其他的认证类型：
+
+|认证类型（Grant Type）|说明    |
+|:-------------------|:-------|
+|Authorization Code  |最常用，大多数在线服务都提供了这种认证类型的支持|
+|Implicit            |同 Authorization Code 使用场景类似，但简化了认证过程，安全性也会有所降低|
+|Resource Owner Password Credentials |直接使用用户名和密码登录，适用于可信的客户端，比如在线服务自己开发的官方客户端|
+|Client Credentials  |不以用户为单位，而是通过客户端来认证，通常用于访问公开信息|
+
+除了上面的认证类型，还有 SAML Bearer Assertion 认证和 JWT Bearer Token 认证，在 RFC 7522 中有详细定义，简化教程：[https://aaronparecki.com/oauth-2-simplified/](https://aaronparecki.com/oauth-2-simplified/)。
+
+一般可以使用 `/oauth/token` 来作为 token 的端点，例如 `https://api.example.com/v1/oauth/token`。
+
+**无论使用何种认证类型，都要使用 HTTPS 来防止信息在传输过程中被窃取，除非 API 不涉及会话信息，即任何人访问都获得相同的结果。**
+
 ## 原型设计工具
 
 - [Axure RP](https://www.axure.com/)
@@ -220,6 +241,25 @@ def hello(name=None):
 其中的 `hello` 函数就是一个视图函数， **业务逻辑（business logic）** 的处理都应该在视图函数中处理，例如对数据库的 CURD、向任务队列（如 Celery）发起异步任务 等等。而 **展示逻辑（display logic）** 的处理应该在 HTML 模板（Jinja2）中处理。
 
 当你在 JS 中插入了太多了 jinja2 语法时，或许这时你考虑将程序转变为 Web API，然后专心用 JS 来写客户端。
+
+Flask 提供了使用 Python 类来组织视图函数，其中 `MethodsView` 类可以让 Web API 的编写更加方便，并且让资源的表示更加直观：
+
+```python
+from flask.view import MethodView
+
+class ItemAPI(MethodView):
+
+    def get(self, item_id):
+        pass
+    
+    def delete(self, item_id):
+        pass
+
+
+app.add_url_rule('/items/<int:item_id>', view_func=ItemAPI.as_view('item_api'), methods=['GET', 'DELETE'])
+```
+
+除了定义资源类，还需要使用 `add_url_rule()` 方法来注册路由，其中 `as_view()` 方法将资源类转换为视图函数，需要传入一个自定义的端点值（用来给 `url_for()` 生成 URL），并且需要在 `methods` 参数中传入在资源类中使用的方法。
 
 ### 蓝图（blueprint）
 
