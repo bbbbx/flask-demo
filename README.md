@@ -87,6 +87,70 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
 - [httpie](https://github.com/jakubroztocil/httpie)：命令行式的 HTTP 客户端，比 `curl` 简便
 - 只需在 `<i>` 标签内写出图标的名词即可渲染出对应名称的图标，这种特性称为 **ligatures**，例如 `<i class="material-icons">face</i>`
 - 另一个前端 framework：[Materialize](https://materializecss.com/)，基于 Material Design。
+- 在以前，服务器端和客户端的 API 通信主要通过 RPC（Remote Procedure Call，远程过程调用）和 SOAP（Simple Object Access Protocol，简单对象访问协议）实现，但由于这些协议的规范过于严格，实现起来不够灵活，已经被逐渐抛弃。REST（Representational State Transfer，表现层状态转移）架构逐渐流行起来。为了方便理解，可以在 REST 前补全主语 Resource，即 Resouce REST，意思是 “资源（Resource）在网络中以某种表现形式（Representational）进行状态转移（State Transfer）。REST 不是规范，只是一种架构风格，设计 API 时不必完全按照 REST 的架构要求，要尽量从 API 自身特点和普适的规范来设计，而不是拘泥于 REST。
+
+## 设计优美实用的 Web API
+
+在设计 Web API 时有一个重要的考量：目标用户群，即 API 所面向的主要开发人员分类。是 LSUD（Large Set of Unknown Developers）还是 SSKD（Small Set of Known Developers）。
+
+1. **使用 URL 定义资源。** 表示资源的 URL 也被称为端点或 API 端点。URL 的设计应遵循：
+   1. 尽量保持简短易懂
+   2. 避免暴露服务器架构
+   3. 使用类似文件系统的层级结构。例如：
+      1. `api.example.com/users`：所有用户
+      2. `api.example.com/users/123/`：ID 为 123 的用户
+      3. `api.example.com/users/123/posts`：ID 为 123 的用户的所有文章
+      4. `api.example.com/posts/23/comments`：ID 为 23 的文章的所有评论
+2. **使用 HTTP 方法描述操作。** 对资源的常见操作：创建、读取、更新、删除（CRUD），HTTP 方法与对应 URL 的关系：
+    |URL|GET|PUT|PATCH|POST|DELETE|
+    |:--|:--|:--|:----|:---|:-----|
+    |资源集合，比如 `https://api.example.com/posts`|列出集合成员的所有信息|替换整个集合的资源|一般不使用|在集合中创建一个新条目，新条目的 URL 自动生成并包含在响应中返回|删除整个资源|
+    |单个资源，比如 `https://api.example.com/posts/123`|获取指定资源的详细信息，采用 XML 或 JSON 等表现形式|替换指定的集合成员，如果不存在则创建|更新集合成员，仅提供更新的内容|一般不使用|删除指定的集合成员|
+
+    每种方法应该返回的响应内容：
+
+    |HTTP 方法|返回的响应|
+    |:-------|:-------|
+    |GET     |返回主体为目标资源的表现层，200（OK）响应|
+    |POST    |返回指定数据新地址的表现层，头部的 `Location` 字段为指向资源的 URL，201（Greated）响应|
+    |PUT     |若包含请求处理状态的表现出，则返回 200 响应；若空数据，则返回 204（No Content）响应|
+    |PATCH   |同上  |
+    |DELETE  |若请求被接收，但删除操作还未执行，则返回 202（Accept）响应；若删除操作已经执行，返回 204 响应；若删除操作已经执行，且返回包含状态信息的表现层，则返回 200 响应|
+
+    HTTP 方法的详细定义和规则在 RFC 7231 中。
+
+    **这里的表现层（repersentation）指的资源的表现形式，例如 JSON 格式的数据。**
+3. **使用 JSON 交换数据。** JSON 已经取代了 XML 成为了 API 的标准数据格式，例如一篇文章可能会用下面的 JSON 数据表示：
+    ```json
+    {
+        "id": 123,
+        "url": "http://api.example.com/item/1",
+        "html_url": "http://example.com/item/1",
+        "title": "Hello Flask!",
+        "body": "Something...",
+        "created_at": "2019-01-27T15:44:05Z",
+        "comments_url": "http://api.example.com/posts/123/comments",
+        "author": {
+            "id": 1,
+            "url": "http://api.example.com/users/1",
+            "html_url": "http://example.com/users/1",
+            "username": "admin",
+            "website": "http://example.com",
+            "posts_url": "http://api.example.com/users/1/posts",
+            "type": "Admin",
+            "is_admin": true
+        }
+    }
+    ```
+
+    除了包含文章的基本内容（标题、正文）外，还应该添加指向其他相关资源的 URL（比如作者、评论等），这样 API 的使用者就可以自己探索其他资源了。
+4. **设置 API 版本。** 当打算对 API 进行更新时，我们应该考虑到还有大量的用户使用的客户端依赖于旧版的 API。为此，我们需要保留旧版的 API，创建一个新版本。可以在 API 的 URL 中指定版本：
+   - Version 1：`http://api.example.com/v1`
+   - Version 2：`http://api.example.com/v2`
+
+    或直接在子域中指定：
+   - Version 1：`http://api.example.com`
+   - Version 2：`http://api2.example.com`
 
 ## 原型设计工具
 
