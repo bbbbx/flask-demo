@@ -1,6 +1,7 @@
 from faker import Faker
 from flask import Blueprint, jsonify, render_template
 from todoism.models import User, Item
+from todoism.extensions import db
 
 auth_bp = Blueprint('auth', __name__)
 fake = Faker()

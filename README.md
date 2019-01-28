@@ -173,6 +173,27 @@ OAuth 允许用户授权第三方移动应用有限制地访问用户存储在�
 
 **无论使用何种认证类型，都要使用 HTTPS 来防止信息在传输过程中被窃取，除非 API 不涉及会话信息，即任何人访问都获得相同的结果。**
 
+使用密码认证类型时（也就是第三种），客户端在认证时需要以 `application/x-www-form-urlencoded` 的形式（也就是平时提交 HTML 表单时默认的类型）发送 POST 请求，并经过 UTF-8 编码后发送到服务器。提交的 key 和 value 如下：
+
+|key          | value             |
+|:------------|:------------------|
+|`grant_type` | 必须为 `password`  |
+|`username`   | 用户名（必填）      |
+|`password`   | 密码（必填）        |
+|`scope`      | 允许的权限范围（可选）|
+
+比如，客户端发送的请求可能会是这样：
+
+```http
+POST /v1/oauth/token
+Host: api.example.com
+Content-Type: application/x-www-form-urlencoded
+
+grant_type=password&username=venus&password=666666
+```
+
+如果不是开放的 API，还需要对客户端进行验证。可以使用 HTTP Basic 认证的方式将客户端 ID 和客户端密码进行 Base64 编码后存放在请求头部的 `Authorization` 字段中。在服务器端，Flask 将 Basic 认证信息解析在 `request.authorization` 中。认证 ID 存在 `request.authorization.name` 中，而认证密码存在 `request.authorization.password` 中。
+
 ## 原型设计工具
 
 - [Axure RP](https://www.axure.com/)
