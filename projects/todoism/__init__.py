@@ -1,4 +1,5 @@
 import os
+import click
 from flask import Flask
 from todoism.extensions import db, csrf, login_manager, babel
 from todoism.setttings import config
@@ -20,6 +21,17 @@ def register_blueprint(app):
     app.register_blueprint(todo_bp, url_prefix='/todo')
     app.register_blueprint(api_v1, subdomain='api', url_prefix='/v1')
 
+def register_command(app):
+    @app.cli.command()
+    @click.option('--drop', is_flag=True, help='Create after drop.')
+    def initdb(drop):
+        """Initialize the database."""
+        if drop:
+            click.confirm('This operation will delete the database, do you want to continue?', abort=True)
+            db.drop_all()
+            click.echo('Drop tables.')
+        db.create_all()
+        click.echo('Initialized database.')
 
 def create_app(config_name):
     if config_name is None:
@@ -29,5 +41,6 @@ def create_app(config_name):
 
     register_extensions(app)
     register_blueprint(app)
+    register_command(app)
 
     return app
