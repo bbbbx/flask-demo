@@ -168,6 +168,21 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
    - Version 1：`http://api.example.com`
    - Version 2：`http://api2.example.com`
 
+在 API 的响应中，除了将模型中定义的字段数据外，还可以有与该模型相关的 URL 和内容，这种称为 **超媒体作为应用状态的引擎（Hypermedia as the Engine of Application State）**。例如访问 Github 的 API [https://api.github.com/](https://api.github.com/)：
+
+```json
+{
+    // ...
+    "emails_url": "https://api.github.com/user/emails",
+    "user_url": "https://api.github.com/users/{user}",
+    "repository_url": "https://api.github.com/repos/{owner}/{repo}",
+    // ...
+}
+```
+
+会给出一系列相关的链接（即超媒体），类似导航一样，可以让 API 的用户自己“探索”。
+
+
 ## OAuth2
 
 在传统的 Web 应用中，用户的认证信息存储在浏览器的 cookie 中，但 cookie 在其他客户端中是没有的，所以我们不能通过 cookie 来记住用户的状态。因为 API 的无状态特征，所以需要用户在每一次获取受登录保护的资源时都要提供认证信息，但每次都让用户附加认证信息并不合理。一个更好的方法是用户通过一次认证后，在服务器端为用户生成一个 token，在之后的请求中，客户端可以通过 token 进行认证。
@@ -186,8 +201,6 @@ OAuth 允许用户授权第三方移动应用有限制地访问用户存储在�
 除了上面的认证类型，还有 SAML Bearer Assertion 认证和 JWT Bearer Token 认证，在 RFC 7522 中有详细定义，简化教程：[https://aaronparecki.com/oauth-2-simplified/](https://aaronparecki.com/oauth-2-simplified/)。
 
 一般可以使用 `/oauth/token` 来作为 token 的端点，例如 `https://api.example.com/v1/oauth/token`。
-
-**无论使用何种认证类型，都要使用 HTTPS 来防止信息在传输过程中被窃取，除非 API 不涉及会话信息，即任何人访问都获得相同的结果。**
 
 使用密码认证类型时（也就是第三种），客户端在认证时需要以 `application/x-www-form-urlencoded` 的形式（也就是平时提交 HTML 表单时默认的类型）发送 POST 请求，并经过 UTF-8 编码后发送到服务器。提交的 key 和 value 如下：
 
@@ -209,6 +222,20 @@ grant_type=password&username=venus&password=666666
 ```
 
 如果不是开放的 API，还需要对客户端进行验证。可以使用 HTTP Basic 认证的方式将客户端 ID 和客户端密码进行 Base64 编码后存放在请求头部的 `Authorization` 字段中。在服务器端，Flask 将 Basic 认证信息解析在 `request.authorization` 中。认证 ID 存在 `request.authorization.name` 中，而认证密码存在 `request.authorization.password` 中。
+
+客户端获取 token 之后，就可以在访问受认证保护的端点时将这个 token 放在 HTTP 请求的 `Authorization` 头部中验证身份，且需要在 token 之前指定 token 的类型，例如 Bearer（OAuth 2.0 使用的 token 类型，常被翻译为不记名 token，RFC 6750）：
+
+```http
+    Authorization: Bearer eyJhbGciOiJIUzUxMiIsImlhdC...
+```
+
+Flask 的 `request` 对象只支持解析 `Basic` 和 `Digest` 类型的 token，所以，我们需要自己解析 `Bearer` 类型的 token。
+
+**HTTP Basic 认证**：当客户端为浏览器时，接收到 401 响应后（还需要返回一个 `WWW-Authenticate` 响应头），浏览器会弹出一个默认的窗口用于填写用户 ID 和密码（HTTP Basic 认证）。用户名和密码经过 base64 编码后放在 `Authorization`，**不是很安全，一定要用 HTTPS 进行传输。**
+
+**HTTP Digest 认证**：将用户名和密码经过一定的加密，比 Basic 要安全一点，也复杂一点。
+
+**无论使用何种认证类型，都要使用 HTTPS 来防止信息在传输过程中被窃取，除非 API 不涉及会话信息，即任何人访问都获得相同的结果。**
 
 ## 原型设计工具
 
