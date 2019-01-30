@@ -348,3 +348,48 @@ app.add_url_rule('/items/<int:item_id>', view_func=ItemAPI.as_view('item_api'), 
 ### 什么是 Role-Based Access Control?
 
 通常大型程序需要多个用户角色：拥有最高权限的管理员、负责管理内容的协管员、使用网站提供服务的普通用户、被临时封禁的用户等。各类用户所能进行的操作不能完全相同，在计算机安全领域，这种管理方法称为 RBAC（Role-Based Access Control，基于角色的权限控制）。
+
+## 部署
+
+Werkzeug 提供的开发服务器不是单纯意义上的 Web Server，在生产环境，我们需要一个更加强壮的 WSGI 服务器。这些 WSGI 服务器也被称为独立 WSGI 容器，因为它可以承载我们编写的 WSGI 程序，然后处理 HTTP 请求和响应。可选的有 Gunicorn（Green Unicorn）、uWSGI、Gevent 等。主流的有 Gunicorn、uWSGI。
+
+```sh
+pipenv insall gunicorn  # 安装
+gunicorn --workers=4 --bind=0.0.0.0:8000 wsgi:app  # 启动
+gunicorn --workers=4 --bind=0.0.0.0:8001 wsgi:app  # 启动
+```
+
+### 使用 Nginx 的意义
+
+当使用反向代理服务器后，Gunicorn 不再需要监听外部请求，而是直接监听本地的某个端口。
+
+1. 启动多个 Gunicorn 绑定非 80 端口，使用一个 Nginx 进行分发请求给不同的 Gunicorn，进行负载均衡
+    ```nginx
+    upstream backend {
+      server localhost:8000;
+      server localhost:8001;
+    }
+
+    server {
+        listen       80;
+        server_name  localhost;
+
+        location / {
+            proxy_pass http://backend;
+            proxy_next_upstream error timeout invalid_header http_500 http_502 http_503 http_504;
+        }
+    }
+    ```
+2. 拦截静态请求并对静态资源进行缓存，不用经过 Gunicorn
+3. 提高安全系数，避免直接暴露 WSGI 服务器
+4. 设置反向代理可以对请求进行预处理，可以缓冲请求，交给 WSGI 服务器一个完整的 HTTP 请求
+
+### 使用 Supervisor 管理进程
+
+我们需要一个工具来自动在后台运行 Gunicorn，而不是通过命令来启动，同时还可以监控它的运行状况，并在系统出错的时候自动重启程序。
+
+```sh
+sudo apt install supervisor  # 安装
+```
+
+如果有非常多的服务器需要管理，还可以考虑使用 SaltStack 或 Ansible。
