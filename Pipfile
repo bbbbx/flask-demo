@@ -31,6 +31,9 @@ flask-avatars = "*"
 flask-whooshee = "*"
 flask-babel = "*"
 flask-cors = "*"
+flask-bootstrap = "*"
+pika = "*"
+gunicorn = "*"
 
 [requires]
 python_version = "3.7"
