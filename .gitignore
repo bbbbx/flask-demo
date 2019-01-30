@@ -13,3 +13,5 @@ projects/uploads/avatars/*
 
 projects/whooshee/*
 !projects/whooshee/.gitkeep
+
+*.log

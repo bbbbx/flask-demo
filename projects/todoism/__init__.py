@@ -1,4 +1,6 @@
 import os
+import logging
+from logging.handlers import RotatingFileHandler
 import click
 from flask import Flask
 from todoism.extensions import db, csrf, login_manager, babel
@@ -33,12 +35,27 @@ def register_command(app):
         db.create_all()
         click.echo('Initialized database.')
 
+
+def register_logger(app):
+    app.logger.setLevel(logging.INFO)
+
+    formatter = logging.Formatter('%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+
+    file_handler = RotatingFileHandler('logs/todoism.log', maxBytes=10*1024*1024, backupCount=10)
+    file_handler.setFormatter(formatter)
+    file_handler.setLevel(logging.INFO)
+
+    if not app.debug:
+        app.logger.addHandler(file_handler)
+
+
 def create_app(config_name):
     if config_name is None:
         config_name = os.getenv('FLASK_CONFIG', 'development')
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
+    register_logger(app)
     register_extensions(app)
     register_blueprint(app)
     register_command(app)
