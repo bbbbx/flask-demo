@@ -390,6 +390,31 @@ gunicorn --workers=4 --bind=0.0.0.0:8001 wsgi:app  # 启动
 
 ```sh
 sudo apt install supervisor  # 安装
+supervisord -c /usr/local/etc/supervisord.ini   # 启动
 ```
 
-如果有非常多的服务器需要管理，还可以考虑使用 SaltStack 或 Ansible。
+Supervisor 配置文件 `supervisord.ini` 写入：
+
+```supervisor
+[program:todoism]
+command=pipenv run gunicorn -w 4 wsgi:app
+directory=~/workspace/helloflask/projects
+user=venus
+autostart=true
+autorestart=true
+stopasgroup=true
+killasgroup=true
+```
+
+重启 Supervisor：
+
+```sh
+$ supervisorctl -c /usr/local/etc/supervisord.ini
+todoism                          RUNNING   pid 50060, uptime 0:06:20
+supervisor> reload
+Really restart the remote supervisord process y/N? y
+Restarted supervisord
+supervisor>
+```
+
+如果有非常多的服务器级别进程需要管理，还可以考虑使用 SaltStack 或 Ansible。
