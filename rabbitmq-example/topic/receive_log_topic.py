@@ -5,26 +5,26 @@ connection = pika.BlockingConnection(pika.ConnectionParameters(host='localhost')
 channel = connection.channel()
 
 channel.exchange_declare(
-    exchange='direct_logs',
-    exchange_type='direct'
+    exchange='topic_logs',
+    exchange_type='topic'
 )
 
 result = channel.queue_declare(exclusive=True)
 queue_name = result.method.queue
 
-severities = sys.argv[1:]
-if not severities:
-    sys.stderr.write('Usage: %s [info] [warning] [error]\n' % sys.argv[0])
+binding_keys = sys.argv[1:]
+if not binding_keys:
+    sys.stderr.write('Usage: %s [binding_key]...\n' % sys.argv[0])
     sys.exit(1)
 
-for severity in severities:
+for binding_key in binding_keys:
     channel.queue_bind(
-        exchange='direct_logs',
+        exchange='topic_logs',
         queue=queue_name,
-        routing_key=severity
+        routing_key=binding_key
     )
 
-print(' [*] 正在等待消息，按下 Ctrl+C 可以退出。')
+print(' [*] 正在等待 %r 消息，按下 Ctrl+C 可以退出。' % binding_keys)
 
 def callback(ch, method, properties, body):
     print(" [x] 收到 %r:%r" % (method.routing_key, body))
