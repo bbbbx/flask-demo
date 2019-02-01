@@ -18,6 +18,18 @@ class AppClass:
         self.start(status, response_headers)
         yield b'<h1>Hello World</h1>'
 
+class MyMiddleware(object):
+    def __init__(self, app):
+        self.app = app
+    
+    def __call__(self, environ, start_response):
+        def custom_start_response(status, headers, exc_info=None):
+            headers.append(('A-Costom-Header', 'Nothing'))
+            return start_response(status, headers)
 
-server = make_server('localhost', 5000, hello)
+        return self.app(environ, custom_start_response)
+
+
+wrapped_app = MyMiddleware(hello)
+server = make_server('localhost', 5000, wrapped_app)
 server.serve_forever()

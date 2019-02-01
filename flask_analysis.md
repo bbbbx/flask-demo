@@ -153,7 +153,7 @@ def index():
 
 本地线程就是一个全局对象，你可以使用一种特定线程却线程安全的方法来存储和获取数据。也就是说，同一个变量在不同的线程内拥有各自的变量，互不干扰。实现原理其实很简单，就是根据线程的 ID 来存储数据。Flask 没有使用标准库的 `threading.local()`，而是使用了 Werkzeug 实现的本地线程对象 `werkzeug.local.Local()`。
 
-Flask 使用本地线程来让上下文代理对象可以全局访问，比如 `request`、`session`、`current_app`、`g`，这些对象被称为本地上下文对象（context locals）。因此，在不基于线程、greenlet 或单进程实现的并发服务器商，这些代理对象将无法正常工作，但好在只有少部分服务器不被支持。Flask 的设计初衷是为了让传统 Web 程序的开发更加简单和迅速，而不是用来开发大型程序或异步服务的。但 Flask 的可扩展性却提供了无线的可能，除了使用扩展，我们还可以子类化 `Flask` 类，或是为程序添加中间件。
+**Flask 使用本地线程来让上下文代理对象可以全局访问，比如 `request`、`session`、`current_app`、`g`，这些对象被称为本地上下文对象（context locals）。因此，在不基于线程、Greenlet 或进程实现并发的服务器上，这些代理对象将无法正常工作，但好在只有少部分服务器不被支持。Flask 的设计初衷是为了让传统 Web 程序的开发更加简单和迅速，而不是用来开发大型程序或异步服务的。但 Flask 的可扩展性却提供了无线的可能，除了使用扩展，我们还可以子类化 `Flask` 类，或是为程序添加中间件。**
 
 ### 程序的三种状态
 
@@ -281,5 +281,188 @@ server.serve_forever()
 
 ### 中间件
 
+WSGI 允许使用中间件包装 WSGI 程序，为程序在被调用之前添加额外的功能。中间件可以被用来解耦程序的功能，达到分层的目的。
+
+```python
+from wsgiref.simple_server import make_server
+
+def hello(environ, start_response):
+    status = '200 OK'
+    response_headers = [('Content-Type', 'text/html')]
+    start_response(status, response_headers)
+    return [b'<h1>Hello World</h1>']
+
+class MyMiddleware(object):
+    def __init__(self, app):
+        self.app = app
+    
+    def __call__(self, environ, start_response):
+        def custom_start_response(status, headers, exc_info=None):
+            headers.append(('A-Costom-Header', 'Nothing'))
+            return start_response(status, headers)
+
+        return self.app(environ, custom_start_response)
+
+wrapped_app = MyMiddleware(hello)
+server = make_server('localhost', 5000, wrapped_app)
+server.serve_forever()
+```
+
+中间件接收可调用对象作为参数。这个可调用对象也可以是其他中间件包装的可调用对象。
+
+使用类定义的中间件必须实现 `__call__` 方法，接收 `environ` 和 `start_response` 作为参数，最后传入这两个参数调用实例化时传入的可调用对象。上面的中间件自定义了一个 `custom_start_response` 方法，并将该方法代替 `start_response` 方法，最后向 HTTP 响应添加一个自定义的头部。
+
+在 Flask 中，实际的 WSGI 可调用对象是 `Flask.wsgi_app()` 方法，因此，如果我们自己实现了中间件，那么最佳的方式是嵌套在这个 `wsgi_app` 对象上：
+
+```python
+class MyMiddleware(object):
+    pass
+
+app = Flask(__name__)
+app.wsgi_app = MyMiddleware(app.wsgi_app)
+```
+
 ## Flask 的工作流程与机制
 
+### Flask 中的请求响应循环
+
+#### 程序启动
+
+无论是使用 `flask run` 命令（会调用 `flask.cli.run_command()` 函数）还是使用被弃用的 `flask.Flask.run()` 方法来启动开发服务器，它们都在最后调用了 `werkzeug.serving` 模块中的 `run_simple()` 函数。
+
+```python
+def run_simple(hostname, port, application, use_reloader=False,
+               use_debugger=False, use_evalex=True,
+               extra_files=None, reloader_interval=1,
+               reloader_type='auto', threaded=False,
+               processes=1, request_handler=None, static_files=None,
+               passthrough_errors=False, ssl_context=None):
+
+    if not isinstance(port, int):
+        raise TypeError('port must be an integer')
+    if use_debugger:   # 判断是否使用了调试器
+        from werkzeug.debug import DebuggedApplication
+        application = DebuggedApplication(application, use_evalex)
+    if static_files:
+        from werkzeug.wsgi import SharedDataMiddleware
+        application = SharedDataMiddleware(application, static_files)
+
+    def inner():
+        try:
+            fd = int(os.environ['WERKZEUG_SERVER_FD'])
+        except (LookupError, ValueError):
+            fd = None
+        srv = make_server(hostname, port, application, threaded,
+                          processes, request_handler,
+                          passthrough_errors, ssl_context,
+                          fd=fd)
+        if fd is None:
+            log_startup(srv.socket)
+        srv.serve_forever()
+
+    # ...
+
+    if use_reloader:   # 判断是否使用重载器
+        # ...
+        from werkzeug._reloader import run_with_reloader
+        run_with_reloader(inner, extra_files, reloader_interval,
+                          reloader_type)
+    else:
+        inner()
+```
+
+这里使用到了两个 Werkzeug 提供的中间件，如果 `use_debugger` 为 `True`，即开启了调试模式，那就使用 `DebuggedApplication` 中间件为程序添加调试功能。如果 `static_file` 为 `True`，那就使用 `SharedDataMiddleware` 中间为程序提供静态文件的功能。
+
+这个方法最终会调用 `inner()` 函数，它使用 `make_server()` 方法创建 WSGI 服务器，然后调用 `serve_forever()` 方法运行服务器。当接收到 HTTP 请求报文后，WSGI 服务器就会调用 Web 程序中提供的可调用对象，这个对象就是我们的程序实例 `app`，然后请求进入了。
+
+#### 请求 In
+
+`Flask` 类实现了 `__call__()` 方法，当程序实例被调用时会执行这个方法，而这个方法内部调用了 `Flask.wsgi_app()` 方法：
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    def wsgi_app(self, environ, start_response):
+        ctx = self.request_context(environ)
+        error = None
+        try:
+            try:
+                ctx.push()
+                response = self.full_dispatch_request()
+            except Exception as e:
+                error = e
+                response = self.handle_exception(e)
+            except:
+                error = sys.exc_info()[1]
+                raise
+            return response(environ, start_response)
+        finally:
+            if self.should_ignore_error(error):
+                error = None
+            ctx.auto_pop(error)
+```
+
+从 `wsgi_app()` 方法接收的参数可以看出，这个 `wsgi_app()` 方法就是隐藏在 Flask 中的那个 WSGI 程序。这个将 WSGI 程序实现在单独的方法里，主要是为了方便在附加中间件的同时，又保留对程序实例的引用。
+
+其中终点在 `try...except...`，它尝试从 `Flask.full_dispatch_request()` 方法获取响应，如果出错就根据错误类型来生成错误的响应。
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    def full_dispatch_request(self):
+        """将请求分发出去并对请求进行预处理和后处理，
+        同时捕获 HTTP 异常和处理错误。
+        """
+        self.try_trigger_before_first_request_functions()
+        try:
+            request_started.send(self)       # 发送请求进入信号
+            rv = self.preprocess_request()   # 预处理请求
+            if rv is None:
+                rv = self.dispatch_request() # 分发请求给匹配的视图函数，并获取视图函数的返回值
+        except Exception as e:
+            rv = self.handle_user_exception(e)  # 获取处理异常的视图函数的返回值
+        return self.finalize_request(rv)     # 最终处理，将视图函数的返回值转为 HTTP 响应，并进行后处理
+```
+
+这个函数首先会调用 `preprocess_request()` 分发对请求进行预处理（request preprocessing），这会指向所有使用 `before_request` 钩子注册的函数。然后会调用 `dispatch_request()` 方法，它会匹配并调用对于的视图函数，然后获取视图函数的返回值。最终会调用 `finalize_request()` 方法，并传入视图函数的返回值来生成响应。
+
+#### 响应 Out
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    def finalize_request(self, rv, from_error_handler=False):
+        """将视图函数的返回值转换为响应，然后调用所有的后处理函数。"""
+        response = self.make_response(rv)  # 生成响应对象
+        try:
+            response = self.process_response(response)     # 响应预处理
+            request_finished.send(self, response=response) # 发送信号
+        except Exception:
+            if not from_error_handler:
+                raise
+            self.logger.exception('Request finalizing failed with an '
+                                  'error while handling an error')
+        return response
+```
+
+需要注意的是，这里的 `make_response()` 方法并不是我们从 `flask` 导入并在视图函数中生成响应对象的 `make_response`，我们平时使用的 `make_response` 是 `helpers` 模块中的 `make_response()` 函数，它对传入的参数进行简单的处理后，便将参数传给 `Flask` 类的 `make_response` 方法并返回。
+
+创建了响应对象之后，会调用 `process_response()` 方法，这个方法会在把响应发送给 WSGI 服务器之前执行所有使用 `after_request` 钩子注册的函数。
+
+返回响应之后，代码执行流程就回到了 `wsgi_app()` 方法，最终返回响应对象，WSGI 服务器会将这个响应对象转为 HTTP 响应报文发送给客户端。
+
+下面我们来详细分析这一过程中发生的细节，如路由处理、请求和响应对象的封装等。
+
+### 路由系统
+
+Flask 的路由依赖于 Werkzeug 的路由实现。
+
+### 本地上下文
+
+### 请求和响应对象
+
+### session
+
+### 蓝图
+
+### 模板渲染
