@@ -424,7 +424,7 @@ class Flask(_PackageBoundObject):
         return self.finalize_request(rv)     # 最终处理，将视图函数的返回值转为 HTTP 响应，并进行后处理
 ```
 
-这个函数首先会调用 `preprocess_request()` 分发对请求进行预处理（request preprocessing），这会指向所有使用 `before_request` 钩子注册的函数。然后会调用 `dispatch_request()` 方法，它会匹配并调用对于的视图函数，然后获取视图函数的返回值。最终会调用 `finalize_request()` 方法，并传入视图函数的返回值来生成响应。
+这个函数首先会调用 `preprocess_request()` 分发对请求进行预处理（request preprocessing），这会指向所有使用 `before_request` 钩子注册的函数。然后会调用 `dispatch_request()` 方法，它会调用与 URL 对应的视图函数，然后获取视图函数的返回值。最终会调用 `finalize_request()` 方法，并传入视图函数的返回值来生成响应。
 
 #### 响应 Out
 
@@ -455,9 +455,206 @@ class Flask(_PackageBoundObject):
 
 ### 路由系统
 
-Flask 的路由依赖于 Werkzeug 的路由实现。
+#### 路由注册
+
+Flask 的路由依赖于 Werkzeug 的路由实现。我们先看看如何在 Werkzeug 中使用路由功能：
+
+```python
+from werkzeug.routing import Map, Rule
+m = Map()
+rule1 = Rule('/', endpoint='index')
+rule2 = Rule('/downloads/', endpoint='downloads.index')
+rule3 = Rule('/downloads/<int:id>', endpoint='downloads.show')
+m.add(rule1)
+m.add(rule2)
+m.add(rule3)
+```
+
+而在 Flask 中，我们使用 `route()` 装饰器来将视图函数注册为路由，`Flask.route()` 是 `Flask` 类实例的方法：
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    def route(self, rule, **options):
+        def decorator(f):
+            endpoint = options.pop('endpoint', None)
+            self.add_url_rule(rule, endpoint, f, **options)
+            return f
+        return decorator
+```
+
+route 装饰器内部调用了 `add_url_rule()` 来添加 URL 规则，所以注册路由也可以直接使用 `add_url_rule` 实现（0.2 版本及之后）。add_url_rule 的定义：
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    @setupmethod
+    def add_url_rule(self, rule, endpoint=None, view_func=None,
+                     provide_automatic_options=None, **options):
+        # 设置端点和 HTTP 方法 ...
+        rule = self.url_rule_class(rule, methods=methods, **options)
+        rule.provide_automatic_options = provide_automatic_options
+
+        self.url_map.add(rule)   # 重点语句
+        if view_func is not None:
+            old_func = self.view_functions.get(endpoint)
+            if old_func is not None and old_func != view_func:
+                raise AssertionError('View function mapping is overwriting an '
+                                     'existing endpoint function: %s' % endpoint)
+            self.view_functions[endpoint] = view_func   # 重点语句
+```
+
+这个方法的重点语句是：
+
+```python
+self.url_map.add(rule)
+# ...
+self.view_functions[endpoint] = view_func
+```
+
+这里引入了两个对象：`url_map` 和 `view_functions`。`url_map` 是 Werkzeug 的 `Map` 类实例（`werkzeug.routing.Map`），它存储了 URL 规则和相关的配置，而 `rule` 是 `Rule` 类实例（`werkzeug.routing.Rule`），其中保存了端点和 URL 规则的映射关系。
+
+而 `view_functions` 是 `Flask` 类定义的一个字典，它存储了端点和视图函数的映射关系。
+
+Flask 的路由注册和 Werkzeug 的差不多：
+
+```python
+self.url_rule_class = Rule
+self.url_map = Map()
+rule = self.url_rule_class(rule, methods=methods, **options)
+self.url_map.add(rule)
+```
+
+其中的 `url_rule_class` 存储了 `Rule` 类，而 `url_rule` 是 `Map` 类的实例。
+
+#### URL 匹配
+
+先来看下 Werkzeug 路由的 URL 匹配：
+
+```bash
+>>> urls = m.bind('example.com')   # 传入主机名作为参数
+>>> urls.match('/', 'GET')
+('index', {})
+>>> urls.match('/downloads/42')
+('download.show', {'id': 42})
+>>> urls.match('/downloads')
+Traceback (most recent call last):
+ ...
+ raise RequestSlash()
+werkzeug.routing.RequestSlash
+>>> urls.match('/missing')
+Traceback (most recent call last):
+ ...
+werkzeug.exceptions.NotFound: 404 Not Found
+```
+
+`Map.bind()` 和 `Map.bind_to_environ()` 方法都会返回一个 `MapAdapter` 对象，它负责匹配和构建 URL。`MapAdapter` 类的 `match` 方法用来判断传入的 URL 是否匹配 `Map` 对象中存储的路由规则（存储在 `self.map._rules` 列表中）。
+
+`MapAdapter` 类的 `build()` 方法用于创建 URL，Flask 的 `url_for()` 函数内部就是通过 `build()` 方法实现的。`build` 方法的用法：
+
+```python
+>>> urls.build('index', {})
+'/'
+>>> urls.build('downloads.show', {'id': 42})
+'/downloads/42'
+>>> urls.build('downloads.show', {'id': 42}, force_external=True)
+'http://example.com/downloads/42'
+```
+
+这只是 Werkzeug 路由系统的一部分，全部内容可以查看 http://werkzeug.pocoo.org/docs/latest/routing/。
+
+得到 URL 和端点和映射关系之后，就需要依据端点找到对应视图函数并执行，这个功能由 `dispatch_request()` 方法实现：
+
+```python
+class Flask(_PackageBoundObject):
+    def dispatch_request(self):
+        req = _request_ctx_stack.top.request
+        if req.routing_exception is not None:
+            self.raise_routing_exception(req)
+        rule = req.url_rule
+        # 如果给这个 URL 提供了 automatic 选项，且该请求是 HTTP 的 OPTIONS 方法，则自动响应。
+        if getattr(rule, 'provide_automatic_options', False) \
+           and req.method == 'OPTIONS':
+            return self.make_default_options_response()
+        # 否则就调用对应的视图函数
+        return self.view_functions[rule.endpoint](**req.view_args)
+```
+
+正是 `dispatch_request()` 方法实现了从请求的 URL 找到端点，再从端点找到对应的视图函数并执行。
+
+另外，这里的 `rule` 直接通过 `_request_ctx_stack.top.request` 对象（请求上下文对象）的 `url_rule` 属性获取。由此可知，URL 的匹配工作在请求上下文对象中实现，请求上下文对象在 `ctx.py` 模块中定义：
+
+```python
+class RequestContext(object):
+    def __init__(self, app, environ, request=None, session=None):
+        self.app = app
+        if request is None:
+            request = app.request_class(environ)
+        self.request = request
+        self.url_adapter = None
+        try:
+            self.url_adapter = app.create_url_adapter(self.request)
+        except HTTPException as e:
+            self.request.routing_exception = e
+        # ...
+        if self.url_adapter is not None:
+            self.match_request()   # 匹配请求到对应的视图函数
+```
+
+在请求上下文对象的构造函数中调用了 `match_request()` 方法，顾名思义，这个方法用来匹配请求：
+
+```python
+class RequestContext(object):
+    # ...
+    def match_request(self):
+        try:
+            url_rule, self.request.view_args = \
+                self.url_adapter.match(return_rule=True)
+            self.request.url_rule = url_rule
+        except HTTPException as e:
+            self.request.routing_exception = e
+```
+
+可以看到，使用了 `MapAdapter` 类实例（即 `url_adapter`）的 `match` 方法（并设置 `return_rule=True`）来创建请求上下文对象的 `url_rule` 属性。
+
+而 `url_adapter` 属性在构造函数中通过 `app.create_url_adapter()` 方法创建：
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    def create_url_adapter(self, request):
+        if request is not None:
+            # 如果关闭了子域名匹配（默认值），则使用默认的子域名。
+            subdomain = ((self.url_map.default_subdomain or None)
+                         if not self.subdomain_matching else None)
+            return self.url_map.bind_to_environ(
+                request.environ,
+                server_name=self.config['SERVER_NAME'],
+                subdomain=subdomain)
+        # We need at the very least the server name to be set for this
+        # to work.
+        if self.config['SERVER_NAME'] is not None:
+            return self.url_map.bind(
+                self.config['SERVER_NAME'],
+                script_name=self.config['APPLICATION_ROOT'],
+                url_scheme=self.config['PREFERRED_URL_SCHEME'])
+```
+
+可以看到，这个方法最终调用了 `Map` 类实例（即 `url_map`）的 `bind()` 方法或 `bind_to_environ()` 方法，所以，最终会返回一个 `MapAdapter` 类实例。
+
+回到上面的 `dispatch_request()` 方法，`url_rule` 属性是 `Rule` 类的实例，而 `Rule` 类在实例化时需要传入一个端点参数，存储在实例的 `endpoint` 属性下，所以，在 `dispatch_request()` 的最后一行代码中，通过 `view_functions` 字典，根据端点作为键即可找到视图函数，并调用该视图函数：
+
+```python
+rule = req.url_rule
+# ...
+return self.view_functions[rule.endpoint](**req.view_args)
+```
+
+而参数 `**req.view_args` 包含了 URL 中解析出来的变量值，也就是 `match()` 函数返回的第二个值，这时代码执行流程才终于走到视图函数中。
 
 ### 本地上下文
+
+Flask 提供了 2 种上下文：请求上下和程序上下文。这 2 种上下文分别包含 `request`、`session`、`current_app` 和 `g` 这 4 个变量，这些变量是实际对象的本地代理（local proxy），因此这些变量被称为本地上下文（context locals）。这些代理对象定义在 `global.py` 模块中，该模块还包含了和上下文相关的 2 个错误信息和 3 个函数：
 
 ### 请求和响应对象
 
