@@ -155,6 +155,8 @@ def index():
 
 **Flask 使用本地线程来让上下文代理对象可以全局访问，比如 `request`、`session`、`current_app`、`g`，这些对象被称为本地上下文对象（context locals）。因此，在不基于线程、Greenlet 或进程实现并发的服务器上，这些代理对象将无法正常工作，但好在只有少部分服务器不被支持。Flask 的设计初衷是为了让传统 Web 程序的开发更加简单和迅速，而不是用来开发大型程序或异步服务的。但 Flask 的可扩展性却提供了无线的可能，除了使用扩展，我们还可以子类化 `Flask` 类，或是为程序添加中间件。**
 
+注：[Greenlet](https://github.com/python-greenlet/greenlet) 是以 C 扩展形式接入 Python 的轻量级协程（协程：比线程更轻量，协程的暂停由程序控制（运行于用户态），线程的阻塞状态由操作系统内核来进行切换，协程的开销远小于线程）。
+
 ### 程序的三种状态
 
 Flask 提供的 4 个本地上下文对象分别会在程序的特定状态下去绑定实际的对象。如果我们在访问它们的时候还没有绑定，就会出现 `RuntimeError` 异常。
@@ -512,7 +514,7 @@ self.url_map.add(rule)
 self.view_functions[endpoint] = view_func
 ```
 
-这里引入了两个对象：`url_map` 和 `view_functions`。`url_map` 是 Werkzeug 的 `Map` 类实例（`werkzeug.routing.Map`），它存储了 URL 规则和相关的配置，而 `rule` 是 `Rule` 类实例（`werkzeug.routing.Rule`），其中保存了端点和 URL 规则的映射关系。
+这里引入了两个对象：`url_map` 和 `view_functions`。`url_map` 是 Werkzeug 的 `Map` 类实例（`werkzeug.routing.Map`），它存储了 URL 规则和相关的配置，而 `rule` 是 `Rule` 类实例（`werkzeug.routing.Rule`），其中保存了 URL 规则和端点的映射关系。
 
 而 `view_functions` 是 `Flask` 类定义的一个字典，它存储了端点和视图函数的映射关系。
 
@@ -654,7 +656,400 @@ return self.view_functions[rule.endpoint](**req.view_args)
 
 ### 本地上下文
 
-Flask 提供了 2 种上下文：请求上下和程序上下文。这 2 种上下文分别包含 `request`、`session`、`current_app` 和 `g` 这 4 个变量，这些变量是实际对象的本地代理（local proxy），因此这些变量被称为本地上下文（context locals）。这些代理对象定义在 `global.py` 模块中，该模块还包含了和上下文相关的 2 个错误信息和 3 个函数：
+Flask 提供了 2 种上下文：请求上下和程序上下文。这 2 种上下文分别包含 `request`、`session`、`current_app` 和 `g` 这 4 个变量，这些变量是实际对象的本地代理（local proxy），因此这些变量被称为本地上下文（context locals）。这些代理对象定义在 `globals.py` 模块中，该模块还包含了和上下文相关的 2 个错误信息和 3 个函数：
+
+```python
+from functools import partial
+from werkzeug.local import LocalStack, LocalProxy
+
+# 两个错误信息
+_request_ctx_err_msg = '''\
+Working outside of request context.
+'''
+_app_ctx_err_msg = '''\
+Working outside of application context.
+'''
+
+# 查找请求上下文对象
+def _lookup_req_object(name):
+    top = _request_ctx_stack.top
+    if top is None:
+        raise RuntimeError(_request_ctx_err_msg)
+    return getattr(top, name)
+
+# 查找程序上下文对象
+def _lookup_app_object(name):
+    top = _app_ctx_stack.top
+    if top is None:
+        raise RuntimeError(_app_ctx_err_msg)
+    return getattr(top, name)
+
+# 查找程序实例
+def _find_app():
+    top = _app_ctx_stack.top
+    if top is None:
+        raise RuntimeError(_app_ctx_err_msg)
+    return top.app
+
+# 2 个栈
+_request_ctx_stack = LocalStack()
+_app_ctx_stack = LocalStack()
+
+# 4 个全局上下文代理对象
+current_app = LocalProxy(_find_app)
+request = LocalProxy(partial(_lookup_req_object, 'request'))
+session = LocalProxy(partial(_lookup_req_object, 'session'))
+g = LocalProxy(partial(_lookup_app_object, 'g'))
+```
+
+从 `flask` 包直接导入的 `request` 和 `session` 就是这里定义的全局对象，这两个对象是对实际的 request 变量和 session 对象的代理。在了解代理之前，要先了解本地线程。
+
+#### `Local` 实现本地线程
+
+在处理多个请求时使用多线程后，如何确保这时的 `request` 对象是我们需要的那个呢？比如 A 用户和 B 用户同一时间访问 hello 视图，这时服务器分配了两个线程来处理这两个请求，如何确保每个线程内的 `request` 对象都是各自对应、互不干扰的？
+
+解决方法是引入本地线程（Thread Local）的概念，在保存数据的同时记录下线程的 ID，获取数据时根据请求所在线程的 ID 即可获取到对应的数据，Werkzeug 提供的开发服务器默认会开启多线程支持。
+
+Flask 中的本地线程使用了 Werkzeug 提供的 `Local` 类来实现，`werkzeug/local.py`：
+
+```python
+try:
+    from greenlet import getcurrent as get_ident
+except ImportError:
+    try:
+        from thread import get_ident
+    except ImportError:
+        from _thread import get_ident
+
+class Local(object):
+     __slots__ = ('__storage__', '__ident_func__')
+
+    def __init__(self):
+        object.__setattr__(self, '__storage__', {})
+        object.__setattr__(self, '__ident_func__', get_ident)
+    
+    def __iter__(self):
+        return iter(self.__storage__.items())
+
+    def __call__(self, proxy):
+        """Create a proxy for a name."""
+        return LocalProxy(self, proxy)
+    
+    def __release_local__(self):
+        self.__storage__.pop(self.__ident_func__(), None)
+
+    # 获取属性时
+    def __getattr__(self, name):
+        try:
+            return self.__storage__[self.__ident_func__()][name]
+        except KeyError:
+            raise AttributeError(name)
+    
+    # 设置属性时
+    def __setattr__(self, name, value):
+        ident = self.__ident_func__()
+        storage = self.__storage__
+        try:
+            storage[ident][name] = value
+        except KeyError:
+            storage[ident] = {name: value}
+    
+    # 删除属性时
+    def __delattr__(self, name):
+        try:
+            del self.__storage__[self.__ident_func__()][name]
+        except KeyError:
+            raise AttributeError(name)
+```
+
+`Local` 的构造函数中定义了 2 个属性：`__storage__` 和 `__ident_func__`。其中 `__storage__` 是一个嵌套字典，外层的字典使用了线程 ID 作为键来匹配内部的字典，内部的字典存储了真正的数据。它使用 `self.__storage__[self.__ident_func__()][name]` 来获取数据。例如，一个 `Local` 实例中的 `__storage__` 属性可能是：
+
+```python
+{
+    线程 ID: {
+        name1: 真正的数据,
+        name2: 真正的数据,
+    }
+}
+```
+
+这里获取线程 ID 的方法是使用了 `get_ident()` 方法。这样一来，全局使用的上下文对象就不会在多个线程中产生混乱。
+
+注：这里会先优先使用 Greenlet 提供的 **协程 ID**，如果 Greenlet 不可用再使用 `thred` 模块获取 **线程 ID**。还要注意的是，`Local` 类实例被调用时会返回一个 `LocalProxy` 类实例，这个对象在后面讲。
+
+在 Python 类中，前后双下划线的方法常被称为魔方方法（Magic Methods），我们可以通过重写这些方法来改变类的行为。比如 `__init__()` 会在类被实例化时调用，`__repr__()` 会在类实例被打印时调用，`__getattr__()`、`__setattr__()`、`__delattr__()` 方法分别会在类属性被访问、设置、删除时调用，`__iter__()` 会在类实例被迭代时调用，`__call__()` 会在类实例被调用时执行。完整的列表可以查看 [https://docs.python.org/3/reference/datamodel.html](https://docs.python.org/3/reference/datamodel.html)。
+
+#### `LocalStack` 实现上下文对象
+
+Flask 的上下文对象存储在一个栈结构中，`globals.py` 模块的后两行代码创建了请求上下文栈和程序上下文栈：
+
+```python
+_request_ctx_stacl = LocalStack()  # 请求上下文栈
+_app_ctx_stack = LocalStack()      # 程序上下文栈
+```
+
+我们平时导入的 `request` 对象就是保存在栈里的一个 `RequestContext` 实例，导入的操作相当于获取请求上下文栈的栈顶。`werkzeug/local.py` 定义的 `LocalStack`：
+
+```python
+class LocalStack(object):
+    def __init__(self):
+        self._local = Local()
+
+    def __release_local__(self):
+        self._local.__release_local__()
+    
+    # ...
+
+    def __call__(self):
+        def _lookup():
+            rv = self.top
+            if rv is None:
+                raise RuntimeError('object unbound')
+            return rv
+        return LocalProxy(_lookup)
+    
+    def push(self, obj):
+        """Pushes 一个新的 item 进栈。"""
+        rv = getattr(self._local, 'stack', None)
+        if rv is None:
+            self._local.stack = rv = []
+        rv.append(obj)
+        return rv
+
+    def pop(self):
+        """移除并返回栈顶，如果栈为空则返回 `None`。"""
+        stack = getattr(self._local, 'stack', None)
+        if stack is None:
+            return None
+        elif len(stack) == 1:
+            release_local(self._local)
+            return stack[-1]
+        else:
+            return stack.pop()
+    
+    @property
+    def top(self):
+        """获取栈顶，如果栈为空则返回 `None`。"""
+        try:
+            return self._local.stack[-1]
+        except (AttributeError, IndexError):
+            return None
+```
+
+简单来说，`LocalStack` 就是基于 `Local` 实现的栈结构（即实现了本地线程的栈）。在构造函数中创建了 `Local()` 类的实例 `_local`，并将数据存放到 `_local.stack` 列表里。
+
+注：`LocalStack` 和 `Local` 一样定义了 `__cal__` 方法，当 `LocalStack` 实例被调用时会返回栈顶对象的代理，即 `LocalProxy` 类的实例。
+
+为什么 Flask 要使用 `LocalStack` 而不是直接使用 `Local` 存储上下文对象？主要原因是为了支持多程序共存。如果使用 Werkzeug 提供的 `DispatcherMiddleware` 中间件就可以把多个程序组合成一个 WSGI 程序运行，该中间件会根据请求的 URL 来分发给对应的程序处理，在这种情况下，就会有多个程序上下文存在，而使用栈结构可以让多个程序上下文共存。而活动的当前上下文总是可以在栈顶获得，我们可以在 `globals.py` 模块中的 `_request_ctx_context.top` 属性来获取当前的请求上下文对象。
+
+#### `LocalProxy` 实现代理
+
+代理（Proxy）是一种设计模式，通过代理对象，我们可以使用这个代理对象来操作实际的对象。
+
+`Local` 类实例和 `LocalStack` 类实例被调用时都会使用 `LocalProxy` 包装成一个代理，因此当下面两个对象被调用时会返回代理：
+
+```python
+_request_ctx_stacl = LocalStack()  # 请求上下文栈
+_app_ctx_stack = LocalStack()      # 程序上下文栈
+```
+
+`LocalProxy` 的定义：
+
+```python
+@implements_bool
+class LocalProxy(object):
+    __slots__ = ('__local', '__dict__', '__name__', '__wrapped__')
+
+    def __init__(self, local, name=None):
+        object.__setattr__(self, '_LocalProxy__local', local)
+        object.__setattr__(self, '__name__', name)
+        if callable(local) and not hasattr(local, '__release_local__'):
+            # "local" is a callable that is not an instance of Local or
+            # LocalManager: mark it as a wrapped function.
+            object.__setattr__(self, '__wrapped__', local)
+    
+    def _get_current_object(self):
+        """获取被代理的真实对象。"""
+        if not hasattr(self.__local, '__release_local__'):
+            return self.__local()
+        try:
+            return getattr(self.__local, self.__name__)
+        except AttributeError:
+            raise RuntimeError('no object bound to %s' % self.__name__)
+    
+    # ...
+
+    def __getattr__(self, name):
+        if name == '__members__':
+            return dir(self._get_current_object())
+        return getattr(self._get_current_object(), name)
+    
+    def __setitem__(self, key, value):
+        self._get_current_object()[key] = value
+
+    def __delitem__(self, key):
+        del self._get_current_object()[key]
+    
+    # ...
+```
+
+注意：在 Python 类中，`__foo` 形式的属性会被替换为 `_classname__foo` 的形式，这种双下划线开头的属性在 Python 中表示类私有属性（私有程度强于单下划线）。这也是为什么在 `LocalProxy` 类的构造函数中设置了一个 `_LocalProxy__local` 属性，而在其他方法中却可以简写为 `__local`。
+
+`LocalProxy` 定义了 50+ 个魔法方法，还定义了一个 `_get_current_object()` 方法，用来获取被代理的真实对象。可以用这个方法获取被 `current_user`（flask-login） 代理的当前用户对象。
+
+Flask 为什么要使用代理呢？使用代理对象是因为这些代理可以在线程间共享，且可以让我们以动态的方式来获取被代理的真实对象。
+
+当上下文还没 push 时，4 个全局对象就会处于未绑定状态，而如果不使用代理，那在导入这 4 个全局对象时就会尝试获取上下文，然而此时栈是空的，所以获取的全局对象只能是 `None`。当请求进入并调用视图函数时，虽然此时栈里已经 push 进了上下文，但之前导入的全局对象仍然是 `None`，而如果使用了代理，就可以动态地获取到上下文对象，自然就可以获取到正确的全局对象。
+
+#### 请求上下文
+
+在 Flask 中，请求上下文由 `RequestContext` 类表示。当请求进入时，被 WSGI 程序调用的 `Flask` 类实例（即我们的程序实例 `app`）会在 `wsgi_app()` 方法中调用 `Flask.request_context()` 方法。这个方法会实例化 `RequestContext` 类作为请求上下文，然后 `wsgi_app()` 会调用请求上下文的 `push()` 方法将请求上下文 push 进请求上下文栈，然后开始分开请求。`flask/ctx.py` 中定义的 `RequestContext`：
+
+```python
+class RequestContext(object):
+
+    def __init__(self, app, environ, request=None, session=None):
+        self.app = app
+        if request is None:
+            request = app.request_class(environ)
+        self.request = request     # 请求对象
+        self.url_adapter = None
+        try:
+            self.url_adapter = app.create_url_adapter(self.request)
+        except HTTPException as e:
+            self.request.routing_exception = e
+        self.flashes = None        # flask 消息列表
+        self.session = session     # session 字典
+    
+        self._implicit_app_ctx_stack = []
+        self.preserved = False
+        self._preserved_exc = None
+        self._after_request_functions = []
+        if self.url_adapter is not None:
+            self.match_request()
+    
+    # ...
+
+    def push(self):
+        """绑定该请求上下文到当前的上下文。"""
+        top = _request_ctx_stack.top    # 获取请求上下文栈顶
+        if top is not None and top.preserved:
+            top.pop(top._preserved_exc)
+        
+        # ...
+
+        # 把该请求上下文 push 进上下文栈
+        _request_ctx_stack.push(self)
+
+        if self.session is None:
+            session_interface = self.app.session_interface
+            self.session = session_interface.open_session(
+                self.app, self.request
+            )
+
+            if self.session is None:
+                self.session = session_interface.make_null_session(self.app)
+
+    def pop(self, exc=_sentinel):
+        app_ctx = self._implicit_app_ctx_stack.pop()
+        try:
+            clear_request = False
+            if not self._implicit_app_ctx_stack:
+                self.preserved = False
+                self._preserved_exc = None
+                if exc is _sentinel:
+                    exc = sys.exc_info()[1]
+                self.app.do_teardown_request(exc)  # 这里会执行所有使用 `teardown_request` 构造注册的函数
+                
+                if hasattr(sys, 'exc_clear'):
+                    sys.exc_clear()
+
+                request_close = getattr(self.request, 'close', None)
+                if request_close is not None:
+                    request_close()
+                clear_request = True
+        finally:
+            rv = _request_ctx_stack.pop()
+        # ...
+    
+    def __enter__(self):
+        self.push()
+        return self
+    
+    def __exit__(self, exc_type, exc_value, tb):
+        self.auto_pop(exc_value)
+
+        if BROKEN_PYPY_CTXMGR_EXIT and exc_type is not None:
+            reraise(exc_type, exc_value, tb)
+```
+
+构造函数中创建了 `request` 和 `session` 属性，`request` 属性为空时使用 `app.request_class(environ)` 创建，其中的 `environ` 字典包含了请求信息。而 `session` 属性在构造函数中还只是 `None`，它会在 `push()` 方法中进一步定义，即在请求上下文被 push 进请求上下文栈时。
+
+另外，`pop()` 方法中还调用了 `do_teardown_request()` 方法，这个方法会执行所有使用 `teardown_request` 钩子注册的函数。
+
+`__enter__()` 和 `__exit__()` 魔法方法会分别在进入和退出 `with` 语句时调用，这里用来在 `with` 语句执行前后分别 push 和 pop 请求上下文。
+
+#### 程序上下文
+
+程序上下文 `AppContext` 类的定义和 `RequestContext` 类基本相同，但要简单一些。它的构造函数里创建了 `current_app` 全局对象指向的 `app` 属性和 `g` 全局对象指向的 `g` 属性：
+
+```python
+class AppContext(object):
+    def __init__(self, app):
+        self.app = app
+        self.url_adapter = app.create_url_adapter(None)
+        self.g = app.app_ctx_globals_class()
+
+        # ...
+    
+    def push(self):
+        # ...
+    
+    def pop(self, exc=_sentinel):
+        # ...
+    
+    # ...
+```
+
+有两种方式创建程序上下文，一种是自动创建，当请求进入时，程序上下文会随着请求上下文被创建。在 `RequestContext` 类中，程序上下文在请求上下文推入之前推入：
+
+```python
+class RequestContext(object):
+    # ...
+    def push(self):
+        # ...
+        # 在 push 请求上下文之前先 push 程序上下文
+        app_ctx = _app_ctx_stack.top
+        if app_ctx is None or app_ctx.app != self.app:
+            app_ctx = self.app.app_context()
+            app_ctx.push()
+            self._implicit_app_ctx_stack.append(app_ctx)
+        else:
+            # ...
+```
+
+而在没有请求处理的时候，你就需要手动创建程序上下文。可以使用程序上下文对象的 `push()` 方法，也可以使用 `with` 语句。
+
+`g` 只是一个普通的类字典对象，可以把它看作是 “增加了本地线程支持的全局变量”。有一个常见的疑问是，为什么说每次请求都会重置 `g`？这是因为 `g` 是保存在程序上下文中的，而程序上下文的生命周期是伴随着请求上下文产生和销毁的。每个请求会创建新的请求上下文，同样也会创建新的程序上下文，所以 `g` 会在每个新的请求中被重置。
+
+#### 总结
+
+Flask 的上下文有请求上下文（`RequestContext` 类的实例）和程序上下文（`AppContext` 类的实例）。请求上下文对象存储在请求上下文栈（`_request_ctx_stack`）中，程序上下文对象存储在程序上下文栈（`_app_ctx_stack`）中。而 `request`、`session` 则是保存在 `RequestContext` 中的变量，`current_app` 和 `g` 是保存在 `AppContext` 中的变量。
+
+`request`、`session`、`current_app`、`g` 变量所指向的实例对象都有相应的类：
+
+- `request`：`Request`
+- `session`：`SecureCookieSession`
+- `current_app`：`Flask`
+- `g`：`_AppCtxGlobals`
+
+再来看下为什么要有这一系列东西：
+
+1. 需要保存请求相关的信息，于是有了请求上下文；
+2. 为了更好地分离程序的状态，应用起来更加灵活，于是有了程序上下文；
+3. 为了让上下文对象可以在全局访问，而不用显式地传入视图函数，同时确保线程安全，于是有了 `Local`（本地线程）；
+4. 为了支持多个程序，于是有了 `LocalStack`；
+5. 为了支持动态获取上下文对象，于是有了 `LocalProxy`
 
 ### 请求和响应对象
 
