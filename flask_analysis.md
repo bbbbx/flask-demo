@@ -1,3 +1,48 @@
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+**Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
+
+- [Flask 工作原理与机制解析](#flask-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E4%B8%8E%E6%9C%BA%E5%88%B6%E8%A7%A3%E6%9E%90)
+  - [Flask 源码](#flask-%E6%BA%90%E7%A0%81)
+    - [Flask 版本对比](#flask-%E7%89%88%E6%9C%AC%E5%AF%B9%E6%AF%94)
+  - [Flask 的设计理念](#flask-%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5)
+    - [两个核心依赖](#%E4%B8%A4%E4%B8%AA%E6%A0%B8%E5%BF%83%E4%BE%9D%E8%B5%96)
+    - [显式程序对象](#%E6%98%BE%E5%BC%8F%E7%A8%8B%E5%BA%8F%E5%AF%B9%E8%B1%A1)
+    - [本地上下文](#%E6%9C%AC%E5%9C%B0%E4%B8%8A%E4%B8%8B%E6%96%87)
+    - [程序的三种状态](#%E7%A8%8B%E5%BA%8F%E7%9A%84%E4%B8%89%E7%A7%8D%E7%8A%B6%E6%80%81)
+      - [程序设置状态](#%E7%A8%8B%E5%BA%8F%E8%AE%BE%E7%BD%AE%E7%8A%B6%E6%80%81)
+      - [程序运行状态](#%E7%A8%8B%E5%BA%8F%E8%BF%90%E8%A1%8C%E7%8A%B6%E6%80%81)
+      - [请求运行状态](#%E8%AF%B7%E6%B1%82%E8%BF%90%E8%A1%8C%E7%8A%B6%E6%80%81)
+  - [Flask 与 WSGI](#flask-%E4%B8%8E-wsgi)
+    - [WSGI 程序](#wsgi-%E7%A8%8B%E5%BA%8F)
+    - [WSGI 服务器](#wsgi-%E6%9C%8D%E5%8A%A1%E5%99%A8)
+    - [中间件](#%E4%B8%AD%E9%97%B4%E4%BB%B6)
+  - [Flask 的工作流程与机制](#flask-%E7%9A%84%E5%B7%A5%E4%BD%9C%E6%B5%81%E7%A8%8B%E4%B8%8E%E6%9C%BA%E5%88%B6)
+    - [Flask 中的请求响应循环](#flask-%E4%B8%AD%E7%9A%84%E8%AF%B7%E6%B1%82%E5%93%8D%E5%BA%94%E5%BE%AA%E7%8E%AF)
+      - [程序启动](#%E7%A8%8B%E5%BA%8F%E5%90%AF%E5%8A%A8)
+      - [请求 In](#%E8%AF%B7%E6%B1%82-in)
+      - [响应 Out](#%E5%93%8D%E5%BA%94-out)
+    - [路由系统](#%E8%B7%AF%E7%94%B1%E7%B3%BB%E7%BB%9F)
+      - [路由注册](#%E8%B7%AF%E7%94%B1%E6%B3%A8%E5%86%8C)
+      - [URL 匹配](#url-%E5%8C%B9%E9%85%8D)
+    - [本地上下文](#%E6%9C%AC%E5%9C%B0%E4%B8%8A%E4%B8%8B%E6%96%87-1)
+      - [`Local` 实现本地线程](#local-%E5%AE%9E%E7%8E%B0%E6%9C%AC%E5%9C%B0%E7%BA%BF%E7%A8%8B)
+      - [`LocalStack` 实现上下文对象](#localstack-%E5%AE%9E%E7%8E%B0%E4%B8%8A%E4%B8%8B%E6%96%87%E5%AF%B9%E8%B1%A1)
+      - [`LocalProxy` 实现代理](#localproxy-%E5%AE%9E%E7%8E%B0%E4%BB%A3%E7%90%86)
+      - [请求上下文](#%E8%AF%B7%E6%B1%82%E4%B8%8A%E4%B8%8B%E6%96%87)
+      - [程序上下文](#%E7%A8%8B%E5%BA%8F%E4%B8%8A%E4%B8%8B%E6%96%87)
+      - [总结](#%E6%80%BB%E7%BB%93)
+    - [请求和响应对象](#%E8%AF%B7%E6%B1%82%E5%92%8C%E5%93%8D%E5%BA%94%E5%AF%B9%E8%B1%A1)
+      - [请求对象](#%E8%AF%B7%E6%B1%82%E5%AF%B9%E8%B1%A1)
+      - [响应对象](#%E5%93%8D%E5%BA%94%E5%AF%B9%E8%B1%A1)
+    - [session](#session)
+      - [操作 session](#%E6%93%8D%E4%BD%9C-session)
+      - [session 起源](#session-%E8%B5%B7%E6%BA%90)
+    - [蓝图](#%E8%93%9D%E5%9B%BE)
+    - [模板渲染](#%E6%A8%A1%E6%9D%BF%E6%B8%B2%E6%9F%93)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
 # Flask 工作原理与机制解析
 
 ## Flask 源码
@@ -1053,8 +1098,326 @@ Flask 的上下文有请求上下文（`RequestContext` 类的实例）和程序
 
 ### 请求和响应对象
 
+#### 请求对象
+
+一个 HTTP 请求报文从客户端出发，它大致经过了这些变化：从 HTTP 请求报文到 WSGI 规定的 Python 字典，再到 Werkzeug 中的 `werkzeug.wrappers.Request` 对象，最后到 Flask 中我们熟悉的请求对象 `Request`。
+
+从 `flask` 包中导入的 `request` 是代理，被代理的实际对象是请求上下文 `RequestContext` 对象的 `request` 属性，这个属性存储的是 `Request` 类实例，这个 `Request` 才是表示请求的请求对象，它定义在 `flask/wrappers.py` 中：
+
+```python
+from werkzeug.wrappers import Request as RequestBase
+
+class JSONMixin(object):
+    # 定义 is_json、json 属性和 get_json() 方法
+
+class Request(RequestBase, JSONMixin):
+
+    url_rule = None
+    view_args = None
+    routing_exception = None
+
+    @property
+    def max_content_length(self):
+        """返回配置变量 MAX_CONTENT_LENGTH 的值。"""
+        if current_app:
+            return current_app.config['MAX_CONTENT_LENGTH']
+        
+    @property
+    def endpoint(self):
+        """与请求匹配的端点。"""
+        if self.url_rule is not None:
+            return self.url_rule.endpoint
+    
+    @property
+    def blueprint(self):
+        """当前蓝图的名称。"""
+        if self.url_rule and '.' in self.url_rule.endpoint:
+            return self.url_rule.endpoint.rsplit('.', 1)[0]
+    
+    # ...
+```
+
+Flask 的 `Request` 类继承 Werkzeug 提供的 `Request` 类（它又继承自好几个基础类）和提供 JSON 支持的 `JSONMixin` 类。请求对象 `request` 的大部分属性都直接继承 Werkzeug 中 `Request` 类的属性，比如 `method` 和 `args` 属性等。Flask 的 `Request` 类主要添加了一些 Flask 特有的属性，比如表示所在蓝图的 `blueprint` 属性，或是为了方便获取当前端点的 `endpoint` 属性等。
+
+Flask 允许我们自定义请求类，通常情况下，我们会子类化这个 `Request` 类，并添加一些自定义的设置，然后把这个自定义的请求类赋值给程序实例的 `request_class` 属性。
+
+#### 响应对象
+
+响应对象是由 `finalize_request()` 方法生成的，它调用了 `flask.Flask.make_response()` 方法生成响应对象，传入的 `rv` 参数是 `dispatch_request()` 的返回值，也就是视图函数的返回值。
+
+视图函数可以返回多种类型的返回值，完整的合法返回值如下：
+
+|类型 |说明  |
+|:---|:-----|
+|response_class|如果返回值是响应类的实例，会被直接返回|
+|str           |返回值为字符串，会作为响应的 body   |
+|unicode       |返回值为 unicode 字符串，会被编码为 utf-8，然后作为响应的 body|
+|a WSGI function|返回值为 WSGI 函数，会被作为 WSGI 程序调用并缓存（buffer）为响应对象|
+|tuple          |返回值为元组，可以是两种形式：`(response, status, headers)` 或 `(response, headers)`。这里的 `response` 可以是上面任一形式，`status` 为状态码，`headers` 为 HTTP 头部字段的字典或列表|
+
+这个 `Flask.make_response()` 方法的主要工作就是判断返回值是哪一种类型，然后根据类型做出相应处理，最后生成一个响应对象并返回该响应对象。响应对象为 `Response` 类的实例，`Response` 类定义在 `flask.wrappers.py` 中：
+
+```python
+from werkzeug.wrappers import Response as ResponseBase
+
+class JSONMixin(object):
+    # ...
+
+class Response(ResponseBase, JSONMixin):
+    default_mimetype = 'text/html'
+
+    def _get_data_for_json(self, cache):
+        return self.get_data()
+
+    @property
+    def max_cookie_size(self):
+        """返回配置变量 MAX_COOKIE_SIZE 的值"""
+        if current_app:
+            return current_app.config['MAX_COOKIE_SIZE']
+        # 上下文未被 push 时返回 Werkzeug 中 Response 类的默认值
+        return super(Response, self).max_cookie_size
+```
+
+和 `Request` 类相似，这个响应对象继承 Werkzeug 的 `Response` 类和添加 JSON 支持的 `JSONMixin` 类。这个类比 `Request` 类更简单，只是设置了默认的 MIME 类型。
+
+Flask 也允许自定义响应类，只需子类化 `Response` 类，然后将自定义类赋值给 `flask.Flask.response_class` 属性。
+
 ### session
+
+向 `session` 中存储数据时，会生成加密的 cookie 加入响应中，当用户再次发起请求时，浏览器会自动在 HTTP 请求报文中加入这个 cookie 值。Flask 接收到请求会把名为 session 的 cookie 的值解析到 `session` 对象里，这时我们就可以再次从 `session` 中读取数据。
+
+#### 操作 session
+
+session 变量在 `globals` 模块中定义：
+
+```python
+session = LocalProxy(partial(_lookup_req_object, 'session'))
+```
+
+#### session 起源
 
 ### 蓝图
 
+每个蓝图都是一个休眠的操作子集，只有注册到程序上才会获得生命。这种休眠状态是如何实现的呢？
+
+`Blueprint` 类的大多数方法并不会直接执行逻辑代码，而是把函数作为参数传给 `Blueprint.record()` 方法或 `Blueprint.record_once()` 方法。`record()` 方法在 `blueprints.py` 模块中定义：
+
+```python
+class Blueprint(_PackageBoundObject):
+    # ...
+    def record(self, func):
+        if self._got_registered_once and self.warn_on_modifications:
+            from warnings import warn
+            warn(Warning('The blueprint was already registered once '
+                         'but is getting modified now.  These changes '
+                         'will not show up.'))
+        self.deferred_functions.append(func)
+```
+
+这个方法的主要作用是把传入的函数添加到 `self.deferred_functions` 属性中，它是一个存储所有延迟执行的函数的列表。
+
+蓝图可以被注册多次，但并不代表蓝图里的其他函数可以被注册多次，为了避免重复写入 `deferred_functions` 列表，这些函数会使用 `record_once()` 方法来录入：
+
+```python
+class Blueprint(_PackageBoundObject):
+    # ...
+    def record_once(self, func):
+        def wrapper(state):
+            if state.first_registration:
+                func(state)
+        return self.record(update_wrapper(wrapper, func))
+```
+
+可以看到，`record_once()` 方法内调用了 `record()` 方法，并实现了一个 `wrapper` 函数，通过 `state` 对象的 `first_registration` 属性来判断蓝图是否是第一个注册，以决定是否将该函数加入到 `deferred_functions` 列表。`state` 对象是什么稍后会将。
+
+注意，这里的 `update_wrapper` 是 Python 标准库 `functools` 模块提供的工具函数，用来更新封装函数（即 `wrapper`）。
+
+蓝图中的视图函数及其他处理函数（回调函数）都会使用这种方法临时保存到 `deferred_functions` 列表中。可以猜想到，在注册蓝图时会依次执行这个列表里的函数。
+
+在 Flask 中，我们使用 `Flask.register_blueprint()` 方法将蓝图注册到程序实例上，它的定义：
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    @setupmethod
+    def register_blueprint(self, blueprint, **options):
+        first_registration = False
+
+        if blueprint.name in self.blueprints:
+            assert self.blueprints[blueprint.name] is blueprint, (
+                'A name collision occurred between blueprints %r and %r. Both'
+                ' share the same name "%s". Blueprints that are created on the'
+                ' fly need unique names.' % (
+                    blueprint, self.blueprints[blueprint.name], blueprint.name
+                )
+            )
+        else:
+            self.blueprints[blueprint.name] = blueprint
+            self._blueprint_order.append(blueprint)
+            first_registration = True
+
+        blueprint.register(self, options, first_registration)
+```
+
+蓝图注册后，蓝图将保存在 `Flask` 类实例的 `blueprints` 属性中，它是一个存储蓝图名称与对应蓝图对象的字典。
+
+`register_blueprint()` 方法会先检测要注册的蓝图名称是否已在 `self.blueprints` 属性中，如果已存在，则会再判断这两个蓝图是否是同一个蓝图；如果不存在，则会将该蓝图对象存进 `Flask.blueprints` 字典中，并将表示第一次注册的标志 `first_registration` 设为 `True`，最后调用蓝图对象 `Blueprint` 类的 `register()` 方法：
+
+```python
+class Blueprint(_PackageBoundObject):
+    # ...
+    def register(self, app, options, first_registration=False):
+        self._got_registered_once = True
+        state = self.make_setup_state(app, options, first_registration)
+
+        if self.has_static_folder:
+            state.add_url_rule(
+                self.static_url_path + '/<path:filename>',
+                view_func=self.send_static_file, endpoint='static'
+            )
+
+        for deferred in self.deferred_functions:
+            deferred(state)
+```
+
+这里的 `register()` 方法会使用 `make_setup_state()` 方法创建一个 `state` 对象。根据传入的参数可知这个对象包含了蓝图的状态信息，比如是否是第一次注册。
+
+最后迭代蓝图的 `self.deferred_functions` 列表并在执行列表里的函数时传入了这个 `state` 对象。
+
+从 `make_setup_state()` 方法中可知这个 `state` 对象是 `BlueprintSetupState` 类的实例：
+
+```python
+class BlueprintSetupState(object):
+    def __init__(self, blueprint, app, options, first_registration):
+        self.app = app
+        self.blueprint = blueprint
+        self.options = options
+
+        self.first_registration = first_registration
+
+        subdomain = self.options.get('subdomain')
+        if subdomain is None:
+            subdomain = self.blueprint.subdomain
+        self.subdomain = subdomain
+
+        url_prefix = self.options.get('url_prefix')
+        if url_prefix is None:
+            url_prefix = self.blueprint.url_prefix
+        self.url_prefix = url_prefix
+
+        self.url_defaults = dict(self.blueprint.url_values_defaults)
+        self.url_defaults.update(self.options.get('url_defaults', ()))
+
+    def add_url_rule(self, rule, endpoint=None, view_func=None, **options):
+        if self.url_prefix is not None:
+            if rule:
+                rule = '/'.join((
+                    self.url_prefix.rstrip('/'), rule.lstrip('/')))
+            else:
+                rule = self.url_prefix
+        options.setdefault('subdomain', self.subdomain)
+        if endpoint is None:
+            endpoint = _endpoint_from_view_func(view_func)
+        defaults = self.url_defaults
+        if 'defaults' in options:
+            defaults = dict(defaults, **options.pop('defaults'))
+        self.app.add_url_rule(rule, '%s.%s' % (self.blueprint.name, endpoint),
+                              view_func, defaults=defaults, **options)
+```
+
+除了定义存储蓝图信息的几个属性外，这个类还实现了 `add_url_rule()` 方法，它会在进行相关参数设置后调用程序实例上的 `Flask.add_url_rule()` 方法来添加 URL 规则。
+
 ### 模板渲染
+
+在视图函数中，我们使用 `render_template()` 函数来渲染模板，传入模板名和需要注入模板的关键词参数。`render_template()` 函数的定义在 `flask/templating.py` 模块中：
+
+```python
+def render_template(template_name_or_list, **context):
+    ctx = _app_ctx_stack.top
+    ctx.app.update_template_context(context)
+    return _render(ctx.app.jinja_env.get_or_select_template(template_name_or_list),
+                   context, ctx.app)
+```
+
+这个函数先取得程序上下文，然后调用程序实例的 `Flask.update_template_context()` 方法更新模板上下文，定义如下：
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    def update_template_context(self, context):
+        # 获取全局的模板上下文处理函数
+        funcs = self.template_context_processors[None]
+        reqctx = _request_ctx_stack.top
+        if reqctx is not None:
+            bp = reqctx.request.blueprint
+            if bp is not None and bp in self.template_context_processors:
+                # 获取蓝图的上下文处理函数
+                funcs = chain(funcs, self.template_context_processors[bp])
+        orig_ctx = context.copy()
+        for func in funcs:
+            context.update(func())
+         context.update(orig_ctx)
+```
+
+我们可以使用 `context_processor` 装饰器注册模板上下文处理函数，而注册的处理函数会被存储在 `Flask.template_context_processors` 字典里：
+
+```python
+self.template_context_processors = {
+   None: [_default_template_ctx_processor]
+}
+```
+
+字典的键是蓝图的名称，而全局的处理函数则使用 `None` 作为键，默认的处理函数是 `templating._default_template_ctx_processor()`，它把当前上下文的 `request`、`session` 和 `g` 注入到模板上下文。
+
+而这个 `update_template_context()` 方法的主要工作就是调用这些模板上下文处理函数，获取返回的字典，然后统一添加到 `context` 字典。这里先复制原始的 `context` 字典，最后再将原始的字典合并到 `context` 字典中，这是为了确保最初设置的值不被覆盖，即视图函数中使用 `render_template()` 函数传入的上下文参数优先。
+
+执行完 `update_template_context()` 函数后，`render_template()` 函数会用这个 `context` 字典调用 `_render()` 函数，并返回它。传入的第一个参数为 `ctx.app.jinja_env.get_or_select_template(template_name_or_list)`，这里对程序实例 `app` 调用的 `Flask.jinja_env()` 方法如下：
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    @locked_cached_property
+    def jinja_env(self):
+        """用来加载模板的 Jinja2 环境（templating.Environment 类实例）。"""
+        return self.create_jinja_environment()
+```
+
+这里的 `locked_cached_property` 装饰器定义在 `flask.helpers.locked_cached_property` 中，它的作用是将被装饰的函数转变为一个延迟函数，也就是它的返回值会在第一次获取后被缓存。同时为了线程安全添加了基于 RLock 的可重入线程锁。
+
+`jinja_env()` 调用了 `Flask.create_jinja_environment()` 方法创建一个 Jinja2 环境（`templating.Environment` 类，继承自 `jinja2.Environment`），用于加载模板。这个方法完成了 Jinja2 环境在 Flask 中的初始化，向模板上下文添加了一些全局变量（如 `url_for()`、`get_flashed_message` 函数以及 `config` 对象等，更新了一些渲染设置，还添加了一个 `tojson` 过滤器，该方法定义如下：
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    def create_jinja_environment(self):
+        options = dict(self.jinja_options)
+
+        if 'autoescape' not in options:   # 设置转义
+            options['autoescape'] = self.select_jinja_autoescape
+
+        if 'auto_reload' not in options:  # 设置自动重载选项
+            options['auto_reload'] = self.templates_auto_reload
+        rv = self.jinja_environment(self, **options)
+        rv.globals.update(   # 添加多个全局对象
+            url_for=url_for,
+            get_flashed_messages=get_flashed_messages,
+            config=self.config,
+            request=request,
+            session=session,
+            g=g
+        )
+        rv.filters['tojson'] = json.tojson_filter  # 添加 tojson 过滤器
+        return rv
+```
+
+最后调用的 `_render()` 函数如下：
+
+```python
+def _render(template, context, app):
+    before_render_template.send(app, template=template, context=context)
+    rv = template.render(context)
+    template_rendered.send(app, template=template, context=context)
+    return rv
+```
+
+这个函数调用了 Jinja2 的 `render()` 函数来渲染模板，并在渲染的前后发送相应的信号。而在调用 `_render()` 函数前，还经过了模板文件定位、加载、解析等。渲染工作结束后就会返回渲染好的 unicode 字符串，这个字符串就是最终的视图函数返回值，即响应的 body。
