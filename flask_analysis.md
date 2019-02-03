@@ -1194,7 +1194,264 @@ session 变量在 `globals` 模块中定义：
 session = LocalProxy(partial(_lookup_req_object, 'session'))
 ```
 
+它会调用 `_lookup_req_object()` 函数，传入 `name` 参数的值为 `'session'`：
+
+```python
+def _lookup_req_object(name):
+    top = _request_ctx_stack.top
+    if top is None:
+        raise RuntimeError(_request_ctx_err_msg)
+    return getattr(top, name)
+```
+
+由上面的代码可以看出 `session` 就是请求上下文的一个属性，`session` 是在生成请求上下文时创建的。
+
+之后会执行 `LocalProxy` 类的 `__setattr__()` 方法，它会将设置操作转交给真实的 session 对象：
+
+```python
+@implements_bool
+class LocalProxy(object):
+    # ...
+    def __setitem__(self, key, value):
+        self._get_current_object()[key] = value
+```
+
+而真实的 session 对象其实是 `sessions.py` 模块中的 `SecureCookieSession` 类的实例。而 `SecureCookieSession` 类继承自 `CallbackDict` 类和 `SessionMixin` 类，并添加了 `modified` 和 `accessed` 属性和一些方法。然后在 Werkzeug 中进行了一系列查询之后会决定是否调用 `on_update()` 方法，这个方法会将 `modufied` 和 `accessed` 属性设为 `True`，分别表示 session 是否被修改过和是否被读写过，这两个标志会在保存 session 时用到。那 Werkzeug 是如何知道是否要调动 `on_update()` 方法的呢？这得先了解 `CallbackDict` 类，它定义在 `werkzeug.datastructures` 模块中：
+
+```python
+class CallbackDict(UpdateDictMixin, dict):
+    """一个字典，每当该字典发生变化时都会调用传入的函数。"""
+    def __init__(self, initial=None, on_update=None):
+        dict.__init__(self, initial or ())
+        self.on_update = on_update
+```
+
+`CallbackDict` 类构造函数接受一个 `on_update` 参数，并将它传给了 `self.on_update` 属性。而 `SecureCookieSession` 类在构造函数中定义了一个 `on_update()` 函数，并将其传给了 `on_update` 参数：
+
+```python
+class SecureCookieSession(CallbackDict, SessionMixin):
+    # ...
+    def __init__(self, initial=None):
+        def on_update(self):
+            self.modified = True
+            self.accessed = True
+
+        super(SecureCookieSession, self).__init__(initial, on_update)
+
+    # ...
+```
+
+为什么 `on_update()` 函数会自动调用，答案就在 `CallbackDict` 类的父类 `UpdateDictMixin` 里：
+
+```python
+class UpdateDictMixin(object):
+    """当字典被修改的时候调用 `self.on_update` 。"""
+    on_update = None
+
+    def calls_update(name):
+        def oncall(self, *args, **kw):
+            rv = getattr(super(UpdateDictMixin, self), name)(*args, **kw)
+            if self.on_update is not None:
+                self.on_update(self)
+            return rv
+        oncall.__name__ = name
+        return oncall
+    
+    def setdefault(self, key, default=None):
+        # ...
+    
+    def pop(self, key, default=_missing):
+        # ...
+
+    __setitem__ = calls_update('__setitem__')
+    __delitem__ = calls_update('__delitem__')
+    clear = calls_update('clear')
+    popitem = calls_update('popitem')
+    update = calls_update('update')
+    del calls_update
+```
+
+可以看到它重载了所有的字典操作（`setdefault`、`pop`、`__setitem__`、`__delitem__`、`clear`、`popitem`、`update`），并在这些操作中调用了 `on_update()` 函数。也就是说，一旦继承了 `CallbackDict` 类的对象进行了字典操作，就会执行 `on_update` 属性指向的函数。
+
+我们在视图函数中对 `session` 执行写操作会触发这里的 `__setitem__` 方法，进而执行了 `calls_update('__setitem__')`，最后才得以调用 `SecureCookieSession` 类定义的 `on_update()` 函数。
+
+Werkzeug 提供了许多有用的数据结构，比如 `ImmutableMultiDict`，这些数据结构都定义在 `werkzeug.datastructures` 模块中。
+
+当我们对 `session` 进行写入和更新操作时，Flask 需要将新的 session 值写入到 cookie 中，这是如何做到的呢？首先，视图函数执行完毕后会返回到 `dispatch_request()` 方法中，而 `dispatch_request()` 方法执行完毕后会返回到 `full_dispatch_request()` 方法中。`full_dispatch_request()` 最后会调用 `finalize_request()` 方法来生成响应对象，并返回给 `Flask.wsgi_app()`。而 session 的更新就在 `finalize_request()` 方法中。`finalize_request()` 方法会调用 `Flask.process_response()` 方法来对响应对象进行预处理：
+
+```python
+class Flask(_PackageBoundObject):
+    # ...
+    def process_response(self, response):
+        ctx = _request_ctx_stack.top
+        # ...
+        if not self.session_interface.is_null_session(ctx.session):
+            self.session_interface.save_session(self, ctx.session, response)
+        return response
+```
+
+从代码中可以看出，session 的操作使用到了中间变量 `self.session_interface`，它其实是 `SecureCookieSessionInterface` 类。Flask 用到很多这样的中间变量，比如请求类（`request_class`）和响应类（`response_class`），这是为了方便开发者自己定义这些类。
+
+`process_response()` 方法首先会获得请求上下文对象，然后使用 `is_null_session()` 方法检测 `session` 是否是无效的，这个方法定义在 `SecureCookieSessionInterface` 继承的 `SessionInterface` 类中，它会判断 `session` 是否是 `NullSession` 类的实例。如果该 `session` 有效就会调用 `save_session()` 方法来保存 `session`，`save_session()` 方法的定义：
+
+```python
+class SecureCookieSessionInterface(SessionInterface):
+    # ...
+    def save_session(self, app, session, response):
+        domain = self.get_cookie_domain(app)
+        path = self.get_cookie_path(app)
+
+        # 如果 session 被修改为空，则删除该 cookie
+        # 如果 session 为空，则直接返回
+        if not session:
+            if session.modified:
+                response.delete_cookie(
+                    app.session_cookie_name,
+                    domain=domain,
+                    path=path
+                )
+
+            return
+        
+        # 如果读或写过 session，则添加一个 Vary: Cookie 头部字段
+        if session.accessed:
+            response.vary.add('Cookie')
+
+        # 检查是否需要设置 Cookie 头部，不需要则直接返回
+        if not self.should_set_cookie(app, session):
+            return
+
+        httponly = self.get_cookie_httponly(app)
+        secure = self.get_cookie_secure(app)
+        samesite = self.get_cookie_samesite(app)
+        expires = self.get_expiration_time(app, session)
+        val = self.get_signing_serializer(app).dumps(dict(session))
+        response.set_cookie(
+            app.session_cookie_name,
+            val,
+            expires=expires,
+            httponly=httponly,
+            domain=domain,
+            path=path,
+            secure=secure,
+            samesite=samesite
+        )
+```
+
+在 `save_session()` 方法的最后对传入的响应对象调用了 `set_cookie()` 方法设置了 Cookie 头部，这个方法的定义在 `werkzeug.wrappers.BaseResponse` 类中，也就是 Flask 中的响应类的父类。
+
+`set_cookie()` 方法接收的一系列参数都是通过 Flask 内置的配置键设置的，配置键如下：
+
+|参数|配置变量|默认值|说明|
+|:--|:------|:----|:--|
+|key|'SESSION_COOKIE_NAME|`session`| Cookie 的名称（键）|
+|expires|'PERMANENT_SESSION_LIFETIME'|`timedelta(days=31)`|过期时间|
+|domain|'SESSION_COOKIE_DOMAIN'|`None`|Cookie 的域名（默认为当前域名）|
+|path|'SESSION_COOKIE_PATH'|`None`|Cookie 的路径（默认为整个域）|
+|httponly|'SESSION_COOKIE_HTTPONLY'|`True`|Cookie 是否设置 httplony，设置了则不允许用 JS 获取 Cookie|
+|secure|'SESSION_COOKIE_SECURE'|`False`|Cookie 是否设置 secure，设置了则只允许以 HTTPS 的方式获取 Cookie|
+
+在这些配置键中，'SESSION_COOKIE_NAME' 和 'PERMANENT_SESSION_LIFETIME' 也可以通过 `Flask` 类的属性来设置，分别是 `session_cookie_name` 和 `permanent_session_lifetime`。
+
+其中，session Cookie 的值由下面这行代码生成：
+
+```python
+val = self.get_signing_serializer(app).dumps(dict(session))
+```
+
+签名的序列化器使用 `get_signing_serializer()` 方法生成，并传入了 `app` 对象来获取秘钥，`get_signing_serializer()` 方法的定义如下：
+
+```python
+class SecureCookieSessionInterface(SessionInterface):
+    salt = 'cookie-session'   # 为计算增加随机性的 “盐”
+    digest_method = staticmethod(hashlib.sha1)  # 用于计算签名的哈希函数，默认是 sha1
+    key_derivation = 'hmac'   # itsdangerous 支持的秘钥衍生算法，默认是 hmac
+    serializer = session_json_serializer   # 序列化器
+    session_class = SecureCookieSession
+
+    def get_signing_serializer(self, app):
+        if not app.secret_key:
+            return None
+        signer_kwargs = dict(
+            key_derivation=self.key_derivation,
+            digest_method=self.digest_method
+        )
+        return URLSafeTimedSerializer(app.secret_key, salt=self.salt,
+                                      serializer=self.serializer,
+                                      signer_kwargs=signer_kwargs)
+```
+
+其中使用的序列化类是 `itsdangerous.URLSafeTimedSerializer` 类，这会创建一个具有过期时间且 URL 安全的 token 字符串。
+
+最后，`session['answer'] = 42` 中的 `42` 会变成：
+
+```jwt
+eyJhbnN3ZXIiOjQyfQ.XFb53g.6yYZKZdYbZA8nAocAhy_W_huaF4
+```
+
+这个字符串的形式是 JSON Web Token 的形式，最后这个字符串会被存储到浏览器中名为 session 的 Cookie 中。
+
 #### session 起源
+
+`session` 在 `RequestContext` 类的 `push()` 方法中创建：
+
+```python
+class RequestContext(object):
+    def __init__(self, app, environ, request=None):
+        # ...
+        self.session = None
+        # ...
+    # ...
+    def push(self):
+        # ...
+        if self.session is None:
+            session_interface = self.app.session_interface
+            self.session = session_interface.open_session(
+                self.app, self.request
+            )
+
+            if self.session is None:
+                self.session = session_interface.make_null_session(self.app)
+```
+
+推送请求上下文的 `push()` 方法中调用了 `open_session()` 方法来创建 `session`，也就是说，一旦接收到请求，就会创建 `session` 对象。
+
+`open_session()` 方法接收程序实例和请求对象作为参数，我们可以猜想，请求对象参数用于获取 Cookie 头部的值，而程序实例用于获取秘钥验证 session 是否合法。`open_session()` 方法定义在 `SecureCookieSessionInterface` 类里：
+
+```python
+class SecureCookieSessionInterface(SessionInterface):
+    session_class = SecureCookieSession
+
+    def open_session(self, app, request):
+        s = self.get_signing_serializer(app)
+        if s is None:
+            return None
+        val = request.cookies.get(app.session_cookie_name)
+        if not val:
+            return self.session_class()
+        max_age = total_seconds(app.permanent_session_lifetime)
+        try:
+            data = s.loads(val, max_age=max_age)
+            return self.session_class(data)
+        except BadSignature:
+            return self.session_class()
+```
+
+在这个方法里，如果请求的 Cookie 里包含 session 数据，就将数据解析到 `session` 对象里，否则就生成一个空的 session。这里要注意的是，如果没有设置秘钥，`open_session()` 就会返回 `None`，这时在 `push()` 方法里就会调用 `make_null_session()` 方法来生成一个无效的 session 对象（`NullSession` 类实例），对其执行字典操作会显示警告。
+
+最终返回的 session 就是我们在视图函数里用的 `session` 对象所代理的真实对象，这就是 session 的整个生命轨迹。
+
+签名可以确保 session Cookie 的内容不被篡改，但这并不意味着无法获取加密前的原始数据。事实上，session Cookie 的值可以被轻易地解析出来（即使不知道秘钥），这就是不能将敏感数据存放到 session 中的原因。使用 `itsdangerous` 解析 session：
+
+```sh
+>>> from itsdangerous import base64_decode
+>>> s = 'eyJhbnN3ZXIiOjQyfQ.XFb53g.6yYZKZdYbZA8nAocAhy_W_huaF4'
+>>> data, timestamp, secret = s.split('.')
+>>> base64_decode(data)
+b'{"answer":42}'
+```
+
+Flask 提供的 session 将用户回话存储在客户端，另一种实现用户回话的方式是在服务器端存储用户回话，而客户端只存储一个 session ID。当接收到客户端的请求时，可以根据 Cookie 中的 session ID 来找到对应的用户回话内容。这种方法更为安全和强健，你可以使用 [fengsp/flask-session](https://github.com/fengsp/flask-session) 来实现这种方式的 session。
 
 ### 蓝图
 
