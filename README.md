@@ -1,6 +1,8 @@
-# flask-demo
+# flask-notes
 
-Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同样是以容器命名的 Web 框架）。
+关于 Flask 的笔记。
+
+Flask 的 logo 不是辣椒，而是一个角状的容器，和 Bottle 有 PY 交易（同样是以容器命名的 Web 框架）。
 
 ## Flask 第三方扩展
 
@@ -77,7 +79,7 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
     - 编辑推荐内容
     - 网站固定内容编辑
     - 数据库在线操作
-- i18n：[python-babel/babel](https://github.com/python-babel/babel)，不是编译 ES 6 的那个 babel
+- i18n：[python-babel/babel](https://github.com/python-babel/babel)（不是编译 ES6 的那个 babel）
 - 给 Flask 支持 i18n 和 l10n：[python-babel/flask-babel](https://github.com/python-babel/flask-babel)
 - i18n：国际化，给网站提供多种不同的语言，需要开发者解决，翻译者解决不了
 - l10n：本地化，将网站的语言转换为本地语言，只有翻译者可以解决，[https://wiki.mageia.org/en/What_is_i18n,_what_is_l10n](https://wiki.mageia.org/en/What_is_i18n,_what_is_l10n)
@@ -102,6 +104,7 @@ Flask 不是辣椒，是一个角状的容器，和 Bottle 有 PY 交易（同�
       3. `api.example.com/users/123/posts`：ID 为 123 的用户的所有文章
       4. `api.example.com/posts/23/comments`：ID 为 23 的文章的所有评论
 2. **使用 HTTP 方法描述操作。** 对资源的常见操作：创建、读取、更新、删除（CRUD），HTTP 方法与对应 URL 的关系：
+
     |URL|GET|PUT|PATCH|POST|DELETE|
     |:--|:--|:--|:----|:---|:-----|
     |资源集合，比如 `https://api.example.com/posts`|列出集合成员的所有信息|替换整个集合的资源|一般不使用|在集合中创建一个新条目，新条目的 URL 自动生成并包含在响应中返回|删除整个资源|

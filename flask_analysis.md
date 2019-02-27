@@ -1,9 +1,11 @@
+# Flask 工作原理与机制解析
+
 <!-- START doctoc generated TOC please keep comment here to allow auto update -->
 <!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
 **Table of Contents**  *generated with [DocToc](https://github.com/thlorenz/doctoc)*
 
 - [Flask 工作原理与机制解析](#flask-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86%E4%B8%8E%E6%9C%BA%E5%88%B6%E8%A7%A3%E6%9E%90)
-  - [Flask 源码](#flask-%E6%BA%90%E7%A0%81)
+  - [Flask 源码文件结构](#flask-%E6%BA%90%E7%A0%81%E6%96%87%E4%BB%B6%E7%BB%93%E6%9E%84)
     - [Flask 版本对比](#flask-%E7%89%88%E6%9C%AC%E5%AF%B9%E6%AF%94)
   - [Flask 的设计理念](#flask-%E7%9A%84%E8%AE%BE%E8%AE%A1%E7%90%86%E5%BF%B5)
     - [两个核心依赖](#%E4%B8%A4%E4%B8%AA%E6%A0%B8%E5%BF%83%E4%BE%9D%E8%B5%96)
@@ -43,9 +45,8 @@
 
 <!-- END doctoc generated TOC please keep comment here to allow auto update -->
 
-# Flask 工作原理与机制解析
 
-## Flask 源码
+## Flask 源码文件结构
 
 Flask 仓库中 `flask` 包各个模块及其说明：
 
@@ -71,7 +72,7 @@ Flask 仓库中 `flask` 包各个模块及其说明：
 |`views.py`       |提供了类似 Django 中的视图类，用于编写 Web API 的 `MethodView` 就在这里定义|
 |`wrappers.py`    |实现 WSGI 封装对象，比如代表请求和响应的 `Request` 和 `Response`|
 
-对于一些某些不重要的模块，我们只需要知道大概的实现方法即可，例如 `cli.py`、`debughelpers.py`。我们关注的是实现 Flask 核心功能的模块，例如 WSGI 交互、蓝图、上下文等。
+对于一些某些不重要的模块，我们只需要知道大概的实现方法即可，例如 `cli.py`、`debughelpers.py`。我们关注的是实现 Flask 核心功能的模块，例如 Flask 是如何与 WSGI 服务器交互的、蓝图的实现、上下文的概念等。
 
 在读源码时我们需要带着两个问题去阅读：
 
@@ -108,7 +109,7 @@ def get_flashed_messages(with_categories=False, category_filter=[]):
     return flashes
 ```
 
-可以看到，先是从 `_request_ctx_stack.top.flashes` 中获取闪现消息，如果没有获取到，再从 `session` 中获取。同样，先把 `_request_ctx_stack.top` 当做一个黑盒，不过从变量名上可以推断出这是请求上下文的栈顶。
+可以看到，先是从 `_request_ctx_stack.top.flashes` 中获取闪现消息，如果没有获取到，再从 `session` 中获取。同样，先把 `_request_ctx_stack.top` 当做一个黑盒，不过从变量名上可以推断出这是请求上下文栈的栈顶。
 
 许多介绍 Linux 的书籍都会建议读者先阅读 Linux 0.x 版本（即初期版本）的代码，因为早期的代码仅保留了核心特性，而且代码量较少，容易阅读和理解。Flask 源码也是如此。Flask 最早发布的 0.1版本只包含一个核心文件：`flask.py`，不算空行大概只有 400+ 行代码，使用下面的命令迁出 0.1 版本的代码：
 
